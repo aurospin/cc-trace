@@ -4,12 +4,12 @@ A MITM proxy logger for Claude Code that captures all HTTP traffic between the C
 
 ## Features
 
-- **The Transcript UI** — three-column editorial layout: turn rail (with per-turn token meter), conversation body, right-margin "Exhibits" for hoisted tool calls
+- **The Transcript UI** — three-column editorial layout: turn rail (per-turn token meter, full date + time, fold/unfold), conversation body, right-margin "Exhibits" for hoisted tool calls
 - **Live view** — real-time web UI while Claude runs (default `localhost:3000`); pairs stream in over WebSocket
 - **HTML report** — self-contained single-file report on session exit; fonts and bundle inlined, opens from `file://`
 - **Dual-mode theme** — warm-paper *Bound Transcript* for static reports, graphite + amber *Wire Room* for the live dashboard
 - **JSONL archive** — one JSON object per request/response pair
-- **JSON tree inspector** — collapsible, filterable, click-to-copy paths
+- **JSON tree inspector** — collapsible depth-indented hierarchy, filterable, click-to-copy paths
 - **Streaming support** — reassembles SSE responses into readable messages with cache-aware token counts (`cache_read` / `cache_creation` / `input` / `output`)
 - **Compression aware** — decodes `gzip` / `deflate` / `br` upstream bodies before logging
 - **No sudo** — uses `HTTPS_PROXY` + `NODE_EXTRA_CA_CERTS` env vars scoped to the child process
@@ -20,7 +20,7 @@ A MITM proxy logger for Claude Code that captures all HTTP traffic between the C
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/cc-trace
+git clone https://github.com/aurospin/cc-trace
 cd cc-trace
 npm install
 npm run build
@@ -101,11 +101,12 @@ cc-trace ships a single React app served in two modes — the same component tre
 ### Three views
 
 - **Transcript** — the conversation rendered as a printed transcript:
-  - Left rail: turn number, timestamp, per-turn token meter (cache_read · cache_creation · input · output as a stacked bar). 4xx/5xx turns get a vermillion fore-edge.
+  - Left rail: globally-numbered turn (`Turn 01`, `02`, …), full date + time (`YYYY/MM/DD` over `HH:MM:SS`), and a per-turn token meter (`cache_read` · `cache_creation` · `input` · `output` as a stacked bar). 4xx/5xx turns get a vermillion fore-edge.
   - Center: speaker rules (no chat-bubble cards). Streaming responses are marked `· streamed`.
   - Right margin: tool calls auto-hoisted as numbered Exhibits ("Exhibit A", "B", …). The matching `tool_result` in a later turn is linked back as `re: Exhibit A` so you can scan tool flow at a glance.
-- **Pairs** — compact tabular list of every captured pair (status · method · URL · time). Click to expand the raw JSON.
-- **JSON** — collapsible tree of the entire capture: type-colored values, live filter with match count, hover-reveals the JS path (e.g. `pairs[7].response.body.usage.cache_read_input_tokens`), click to copy.
+  - Fold / unfold: click a conversation header to collapse the entire conversation; click any `Turn NN` label to fold a single turn while keeping its rail visible.
+- **Pairs** — compact tabular list of every captured pair (status · method · URL · `MM/DD HH:MM:SS`). Click any row to expand its raw JSON.
+- **JSON** — collapsible tree of the entire capture: depth-indented hierarchy, type-colored values, live filter with match count, hover-reveals the JS path (e.g. `pairs[7].response.body.usage.cache_read_input_tokens`), click to copy.
 
 The "Include single-message turns" toggle in the tab bar controls whether bootstrap/single-turn requests appear in the Transcript view (they're always present in Pairs and JSON).
 
@@ -116,7 +117,22 @@ Each session produces two files in the output directory:
 - **`session-YYYY-MM-DD-HH-MM-SS.jsonl`** — raw log; one `HttpPair` JSON object per line
 - **`session-YYYY-MM-DD-HH-MM-SS.html`** — self-contained report; open in any browser
 
-The JSONL format is compatible with [claude-trace](https://github.com/anthropics/claude-code/tree/main/packages/claude-trace).
+### JSONL format
+
+One JSON object per line — the file is plain text, append-only, and crash-safe (each line is written atomically via tmp + rename). No header, no footer, no array wrapper, so you can `tail -f` it live or stream-process with `jq`:
+
+```bash
+# Total pairs captured
+wc -l session-*.jsonl
+
+# Just the streaming responses
+jq -r 'select(.response.body_raw != null) | .request.url' session-*.jsonl
+
+# All 4xx/5xx errors
+jq -c 'select(.response.status_code >= 400)' session-*.jsonl
+```
+
+Each line is a single `HttpPair` with three top-level fields: `request`, `response`, `logged_at`. The `request.body` and `response.body` are parsed JSON objects when the upstream content-type is JSON; for streaming SSE responses, `response.body` is `null` and the raw event stream is preserved verbatim in `response.body_raw`. Compressed upstream bodies (`gzip` / `deflate` / `br`) are decoded before logging, so you never see binary blobs. The `Authorization` header value is truncated to `bearer sk-ant-...XXXX` before the line is written, so the JSONL is safe to share for debugging without leaking API keys.
 
 ### JSONL schema
 

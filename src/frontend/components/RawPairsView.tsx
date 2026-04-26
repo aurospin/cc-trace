@@ -14,6 +14,19 @@ function shortenUrl(url: string): string {
   }
 }
 
+/**
+ * Formats an ISO `logged_at` string (YYYY-MM-DDTHH:MM:SS.sssZ) as
+ * `MM/DD HH:MM:SS` for the Pairs tab time column.
+ */
+function formatLoggedAt(loggedAt: string): string {
+  // Defensive slicing: if the string is shorter than expected, fall back to
+  // whatever is available rather than throwing.
+  const mm = loggedAt.slice(5, 7);
+  const dd = loggedAt.slice(8, 10);
+  const time = loggedAt.slice(11, 19);
+  return mm && dd ? `${mm}/${dd} ${time}` : time;
+}
+
 export function RawPairsView({ pairs }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null);
 
@@ -36,7 +49,7 @@ export function RawPairsView({ pairs }: Props) {
               <span className={`status ${cls}`}>{status || "—"}</span>
               <span className="method">{pair.request.method}</span>
               <span className="url">{shortenUrl(pair.request.url)}</span>
-              <span className="time">{pair.logged_at.slice(11, 19)}</span>
+              <span className="time">{formatLoggedAt(pair.logged_at)}</span>
             </button>
             {expanded === i && (
               <pre className="raw-detail mono" style={{ fontSize: 11, overflow: "auto" }}>
