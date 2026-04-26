@@ -3,6 +3,7 @@ import { Command } from "commander";
 export interface ParsedArgs {
   command: "attach" | "report" | "index";
   outputDir?: string;
+  outputName?: string;
   livePort: number;
   includeAllRequests: boolean;
   openBrowser: boolean;
