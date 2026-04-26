@@ -5,7 +5,7 @@ Operational guidance for Claude Code in this repo. Principles and rationale live
 ## Quality Gates
 
 Every test tier MUST pass 100%. Coverage:
-- **Unit**: 100% on `src/` (excludes `frontend/`, `proxy/server.ts`, `proxy/forwarder.ts`, `live-server/server.ts` — covered by integration)
+- **Unit**: 100% on `src/` (excludes `frontend/**/*.tsx`, React hooks/reducers under `frontend/`, `shared/types.ts`, `proxy/server.ts`, `proxy/forwarder.ts`, `live-server/server.ts`, `cli/index.ts`, `cli/commands/**`). Pure-logic `.ts` files colocated under `frontend/<area>/` (`conversation.ts`, `json-path.ts`, `stats.ts`, `throttle.ts`) stay in the unit pool at 100%.
 - **Integration**: 100% on the files unit excludes
 - **E2E**: ≥70%
 
@@ -49,12 +49,17 @@ npx vitest run tests/unit/<file>.test.ts   # single test file
 | `logger/jsonl-writer.ts` | Touches the file on construction (so empty sessions still produce a report); appends pairs synchronously |
 | `live-server/{server,broadcaster}.ts` | Express + WS (`GET /`, `/api/pairs`, `/api/status`, `WS /ws`); in-memory history for reload |
 | `report/html-generator.ts` | Base64-encode pairs into `dist/report/template.html`; inline minimal fallback if missing — keep `build:assets` in build |
-| `shared/{types,conversation}.ts` | Imported by **both** backend and Vite frontend bundle — keep Node-free. `parseHttpPairs` groups by system+model; `assembleStreaming` parses SSE → `AssembledMessage` |
+| `report/template.ts` | `substituteTokens(tpl, repl)` — sorts keys by length desc to avoid `__FOO__` / `__FOOBAR__` crosstalk |
+| `shared/types.ts` | Cross-tier type declarations — Node-free, no runtime code |
+| `shared/version.ts` | Reads `package.json` once and exports `PKG_VERSION` literal — single source for live server + HTML report |
 | `cli/options.ts` | `parseArgs` throws `CliHelpDisplayed` for `--help`/`--version` (caller exits 0); rethrows all other Commander errors (caller exits 1). **Never collapse the catch into "return defaults"** — that silently runs `attach` on typos |
 | `frontend/styles.css` | Theming via CSS vars on `:root[data-mode="static"\|"live"]`. Components reference vars only — never literal colors |
 | `frontend/App.tsx` | Sets `documentElement.dataset.mode` from `window.ccTraceData` presence |
-| `frontend/components/*` | `ConversationView` (three-col transcript: global Turn #, per-turn `<TokenMeter>`, auto-labeled exhibits), `JsonView` (depth-indented collapsible tree + filter), `RawPairsView` (tabular pair list), `TokenMeter` (stacked bar from JSON or SSE usage) |
-| `frontend/hooks/useWebSocket.ts` | No-op when `wsUrl === null` (static mode — `file://` has empty host) |
+| `frontend/conversation/*` | `ConversationView` container + `TurnRow` + `ExhibitList` + `TokenMeter`. `conversation.ts` (pure): `parseHttpPairs` groups by system+model, `assembleStreaming` parses SSE → `AssembledMessage` |
+| `frontend/jsonView/*` | `JsonView` container + `JsonTree` + `JsonNode` (recursive renderer) + `JsonBreadcrumb` + `jsonViewReducer`. `json-path.ts` (pure): segment formatting + clipboard payload |
+| `frontend/stats/*` | `StatsBlock` + `useThrottledStats` hook. `stats.ts` + `throttle.ts` (pure): `computeStats`, `nextRecompute` scheduler |
+| `frontend/rawPairs/RawPairsView.tsx` | Tabular pair list |
+| `frontend/versionLabel/*` | `VersionLabel` + `useWebSocket` (no-op when `wsUrl === null`, e.g. `file://`) + `useWsReconnects` |
 
 ### Two filters (easy to confuse)
 1. **Capture** (`attach.ts`): keep `/v1/messages` with `messages.length >= 1`. `--include-all-requests` disables.

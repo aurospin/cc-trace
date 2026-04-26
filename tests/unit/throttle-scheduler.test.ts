@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { nextRecompute } from "../../src/shared/throttle.js";
+import { nextRecompute } from "../../src/frontend/stats/throttle.js";
 
 const WINDOW = 250;
 

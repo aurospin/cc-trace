@@ -1,9 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as url from "node:url";
-import { substituteTokens } from "../shared/template.js";
 import type { HttpPair } from "../shared/types.js";
 import { PKG_VERSION } from "../shared/version.js";
+import { substituteTokens } from "./template.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const TEMPLATE_PATH = path.join(__dirname, "template.html");

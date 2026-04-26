@@ -6,7 +6,14 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**'],
       exclude: [
-        'src/frontend/**',
+        // Frontend UI components, React hooks, reducers, type decls — untestable in Node unit pool
+        'src/frontend/**/*.tsx',
+        'src/frontend/**/*.d.ts',
+        'src/frontend/jsonView/jsonViewReducer.ts',
+        'src/frontend/stats/useThrottledStats.ts',
+        'src/frontend/versionLabel/useWebSocket.ts',
+        'src/frontend/versionLabel/useWsReconnects.ts',
+        // Pure type module
         'src/shared/types.ts',
         // Covered by integration tests (not unit tests)
         'src/proxy/server.ts',

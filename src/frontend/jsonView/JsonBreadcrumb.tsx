@@ -1,5 +1,5 @@
 import type React from "react";
-import { formatJsonPath } from "../../shared/json-path.js";
+import { formatJsonPath } from "./json-path.js";
 
 interface Props {
   lastFocused: ReadonlyArray<string | number>;

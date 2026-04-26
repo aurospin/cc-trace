@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatForClipboard, formatJsonPath } from "../../src/shared/json-path.js";
+import { formatForClipboard, formatJsonPath } from "../../src/frontend/jsonView/json-path.js";
 
 describe("formatForClipboard", () => {
   it("C-J-01: object → pretty 2-space JSON with trailing newline", () => {

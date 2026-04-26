@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { assembleStreaming, parseHttpPairs } from "../../shared/conversation.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
 import { exhibitLabel } from "./ExhibitList.js";
 import { TurnRow, formatDate, formatTime } from "./TurnRow.js";
+import { assembleStreaming, parseHttpPairs } from "./conversation.js";
 
 interface Props {
   pairs: HttpPair[];

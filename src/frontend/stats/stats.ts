@@ -1,5 +1,5 @@
-import { parseHttpPairs } from "./conversation.js";
-import type { HttpPair, SessionStats, SessionTokenTotals } from "./types.js";
+import type { HttpPair, SessionStats, SessionTokenTotals } from "../../shared/types.js";
+import { parseHttpPairs } from "../conversation/conversation.js";
 
 const NUMBER_FMT = new Intl.NumberFormat("en-US");
 

@@ -107,7 +107,7 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 - [X] T031 [US2] Run `npm run lint && npm run typecheck && npm run test`; confirm all green and unit coverage is 100% line+branch on `src/shared/version.ts` and `src/shared/template.ts`. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
 - [X] T032 [US2] Verify integration test `tests/integration/live-server.test.ts` (specifically `C-V-04` which asserts `version` matches `package.json`) still passes — proves end-to-end version resolution unchanged.
 - [X] T033 [US2] Verify `tests/unit/html-generator.test.ts` (specifically `C-V-01`–`C-V-03`) still passes — proves token-substitution behavior unchanged.
-- [ ] T034 [US2] Squash-merge US2 PR into `002-structural-refactor`.
+- [X] T034 [US2] Squash-merge US2 PR into `002-structural-refactor`. **Committed as 8438c29.**
 
 **Checkpoint US2**: `src/shared/version.ts` and `src/shared/template.ts` exist with 100% coverage. `report/html-generator.ts` and `live-server/server.ts` import from them. All existing tests green.
 
@@ -121,7 +121,7 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 
 ### Move shared/ single-feature modules into feature folders (per FR-013)
 
-- [ ] T035 [P] [US3] Move `src/shared/conversation.ts` → `src/frontend/conversation/conversation.ts`.
+- [X] T035 [P] [US3] Move `src/shared/conversation.ts` → `src/frontend/conversation/conversation.ts`.
 - [ ] T036 [P] [US3] Move `src/shared/json-path.ts` → `src/frontend/jsonView/json-path.ts`.
 - [ ] T037 [P] [US3] Move `src/shared/stats.ts` → `src/frontend/stats/stats.ts` (creates the `stats/` folder).
 - [ ] T038 [P] [US3] Move `src/shared/throttle.ts` → `src/frontend/stats/throttle.ts`.

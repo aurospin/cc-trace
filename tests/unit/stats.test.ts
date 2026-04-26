@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeStats, formatNumber } from "../../src/shared/stats.js";
+import { computeStats, formatNumber } from "../../src/frontend/stats/stats.js";
 import type { HttpPair } from "../../src/shared/types.js";
 
 const ZERO_TOKENS = {

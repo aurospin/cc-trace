@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { substituteTokens } from "../../src/shared/template.js";
+import { substituteTokens } from "../../src/report/template.js";
 
 describe("substituteTokens", () => {
   it("returns the template unchanged when the replacements map is empty", () => {

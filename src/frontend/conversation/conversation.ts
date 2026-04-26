@@ -5,7 +5,7 @@ import type {
   HttpPair,
   TextBlock,
   ToolUseBlock,
-} from "./types.js";
+} from "../../shared/types.js";
 
 interface SSEEvent {
   type: string;

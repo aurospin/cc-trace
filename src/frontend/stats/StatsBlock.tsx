@@ -1,6 +1,6 @@
-import { formatNumber } from "../../shared/stats.js";
 import type { HttpPair } from "../../shared/types.js";
-import { useThrottledStats } from "../hooks/useThrottledStats.js";
+import { formatNumber } from "./stats.js";
+import { useThrottledStats } from "./useThrottledStats.js";
 
 interface Props {
   pairs: HttpPair[];

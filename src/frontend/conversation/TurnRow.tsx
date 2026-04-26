@@ -1,7 +1,7 @@
 import type React from "react";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
-import { TokenMeter } from "../components/TokenMeter.js";
 import { ExhibitList } from "./ExhibitList.js";
+import { TokenMeter } from "./TokenMeter.js";
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");

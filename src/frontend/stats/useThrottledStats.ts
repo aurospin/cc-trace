@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { computeStats } from "../../shared/stats.js";
-import { type SchedulerSnapshot, nextRecompute } from "../../shared/throttle.js";
 import type { HttpPair, SessionStats } from "../../shared/types.js";
+import { computeStats } from "./stats.js";
+import { type SchedulerSnapshot, nextRecompute } from "./throttle.js";
 
 function snapshot(pairs: HttpPair[]): SchedulerSnapshot {
   return {

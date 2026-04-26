@@ -1,5 +1,5 @@
 import type React from "react";
-import { formatForClipboard } from "../../shared/json-path.js";
+import { formatForClipboard } from "./json-path.js";
 import { type JsonViewAction, type JsonViewState, lookupExpanded } from "./jsonViewReducer.js";
 
 const INDENT_PX = 14;
