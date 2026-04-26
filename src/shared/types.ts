@@ -75,12 +75,12 @@ export interface AssembledMessage {
 export type ContentBlock = TextBlock | ToolUseBlock;
 
 export interface TextBlock {
-  type: 'text';
+  type: "text";
   text: string;
 }
 
 export interface ToolUseBlock {
-  type: 'tool_use';
+  type: "tool_use";
   id: string;
   name: string;
   input: unknown;
