@@ -13,6 +13,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
+        format: 'iife',
         entryFileNames: 'index.js',
         chunkFileNames: 'chunks/[name].js',
         assetFileNames: '[name][extname]',

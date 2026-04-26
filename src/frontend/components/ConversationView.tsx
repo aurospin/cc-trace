@@ -7,6 +7,42 @@ interface Props {
   includeAll: boolean;
 }
 
+/** Renders an Anthropic-shaped message content (string or content-block array) safely. */
+function renderUserContent(content: unknown): React.ReactNode {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return JSON.stringify(content);
+  return content.map((block, i) => {
+    if (typeof block !== "object" || block === null) {
+      return <span key={`b-${i}`}>{String(block)}</span>;
+    }
+    const b = block as { type?: string; text?: string; content?: unknown; tool_use_id?: string };
+    if (b.type === "text" && typeof b.text === "string") {
+      return (
+        <span key={`b-${i}`} style={{ whiteSpace: "pre-wrap" }}>
+          {b.text}
+        </span>
+      );
+    }
+    if (b.type === "tool_result") {
+      const inner = typeof b.content === "string" ? b.content : JSON.stringify(b.content, null, 2);
+      return (
+        <pre
+          key={`b-${i}`}
+          style={{ background: "#1e1e1e", padding: 8, borderRadius: 4, fontSize: 11 }}
+        >{`[tool_result ${b.tool_use_id ?? ""}]\n${inner}`}</pre>
+      );
+    }
+    return (
+      <pre
+        key={`b-${i}`}
+        style={{ background: "#1e1e1e", padding: 8, borderRadius: 4, fontSize: 11 }}
+      >
+        {JSON.stringify(b, null, 2)}
+      </pre>
+    );
+  });
+}
+
 function renderBody(pair: HttpPair): React.ReactNode {
   const resp = pair.response;
   if (!resp) return <em style={{ color: "#888" }}>No response (orphaned)</em>;
@@ -54,7 +90,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
           <h3 style={{ color: "#569cd6", marginBottom: 8 }}>{conv.model}</h3>
           {conv.pairs.map((pair, i) => {
             const reqBody = pair.request.body as {
-              messages?: Array<{ role: string; content: string }>;
+              messages?: Array<{ role: string; content: unknown }>;
             } | null;
             const messages = reqBody?.messages ?? [];
             const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
@@ -70,7 +106,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
                     }}
                   >
                     <strong style={{ color: "#9cdcfe" }}>User: </strong>
-                    <span style={{ whiteSpace: "pre-wrap" }}>{lastUserMsg.content}</span>
+                    {renderUserContent(lastUserMsg.content)}
                   </div>
                 )}
                 <div style={{ padding: 8 }}>

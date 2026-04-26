@@ -1,11 +1,12 @@
 {
   "name": "cc-trace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MITM proxy logger for Claude Code API traffic",
   "type": "module",
   "bin": { "cc-trace": "dist/cli/index.js" },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && npm run build:frontend",
+    "build": "tsc -p tsconfig.build.json && npm run build:assets && npm run build:frontend",
+    "build:assets": "node -e \"require('node:fs').mkdirSync('dist/report',{recursive:true});require('node:fs').copyFileSync('src/report/template.html','dist/report/template.html')\"",
     "build:frontend": "vite build",
     "dev": "tsc --watch",
     "lint": "biome check src/ tests/",

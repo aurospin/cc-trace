@@ -1,5 +1,6 @@
+import * as zlib from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { redactHeaders } from "../../src/proxy/forwarder.js";
+import { decodeBody, redactHeaders } from "../../src/proxy/forwarder.js";
 
 describe("forwarder — redactHeaders", () => {
   it("leaves non-sensitive headers unchanged", () => {
@@ -28,5 +29,39 @@ describe("forwarder — redactHeaders", () => {
     const headers = { "content-type": "application/json", authorization: "Bearer tok" };
     const result = redactHeaders(headers);
     expect(Object.keys(result)).toEqual(["content-type", "authorization"]);
+  });
+});
+
+describe("forwarder — decodeBody", () => {
+  const PAYLOAD = "hello cc-trace";
+
+  it("decompresses gzip-encoded buffers", () => {
+    const compressed = zlib.gzipSync(Buffer.from(PAYLOAD, "utf-8"));
+    expect(decodeBody(compressed, "gzip").toString("utf-8")).toBe(PAYLOAD);
+  });
+
+  it("decompresses deflate-encoded buffers", () => {
+    const compressed = zlib.deflateSync(Buffer.from(PAYLOAD, "utf-8"));
+    expect(decodeBody(compressed, "deflate").toString("utf-8")).toBe(PAYLOAD);
+  });
+
+  it("decompresses brotli-encoded buffers", () => {
+    const compressed = zlib.brotliCompressSync(Buffer.from(PAYLOAD, "utf-8"));
+    expect(decodeBody(compressed, "br").toString("utf-8")).toBe(PAYLOAD);
+  });
+
+  it("returns the buffer unchanged for unknown encodings", () => {
+    const raw = Buffer.from(PAYLOAD, "utf-8");
+    expect(decodeBody(raw, "identity").toString("utf-8")).toBe(PAYLOAD);
+  });
+
+  it("returns the buffer unchanged for empty encoding", () => {
+    const raw = Buffer.from(PAYLOAD, "utf-8");
+    expect(decodeBody(raw, "").toString("utf-8")).toBe(PAYLOAD);
+  });
+
+  it("falls back to raw bytes when decompression fails", () => {
+    const garbage = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+    expect(decodeBody(garbage, "gzip")).toEqual(garbage);
   });
 });

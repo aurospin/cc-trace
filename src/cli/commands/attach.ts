@@ -60,11 +60,18 @@ export async function runAttach(args: ParsedArgs): Promise<void> {
   proxy.emitter.on("pair", (pair) => {
     const body = pair.request.body as { messages?: unknown[] } | null;
     const messageCount = body?.messages?.length ?? 0;
-    const shouldLog =
-      args.includeAllRequests || (pair.request.url.includes("/v1/messages") && messageCount > 2);
+    const isMessages = pair.request.url.includes("/v1/messages");
+    const shouldLog = args.includeAllRequests || (isMessages && messageCount >= 1);
     if (shouldLog) {
       writer.write(pair);
       broadcaster.send(pair);
+      process.stdout.write(
+        `  [captured] ${pair.request.method} ${pair.request.url} (${messageCount} messages)\n`,
+      );
+    } else {
+      process.stdout.write(
+        `  [skipped]  ${pair.request.method} ${pair.request.url} (${messageCount} messages)\n`,
+      );
     }
   });
 

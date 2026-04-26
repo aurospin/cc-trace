@@ -7,8 +7,34 @@ import { useWebSocket } from "./hooks/useWebSocket.js";
 
 type View = "conversations" | "raw" | "json";
 
-const WS_URL =
-  typeof window !== "undefined" ? `ws://${window.location.host}` : "ws://localhost:3000";
+interface ErrorBoundaryState {
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { error: null };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 16, color: "#f48771" }}>
+          <h2>Render error</h2>
+          <pre style={{ whiteSpace: "pre-wrap" }}>{this.state.error.message}</pre>
+          <button
+            type="button"
+            onClick={() => this.setState({ error: null })}
+            style={{ padding: "6px 12px", marginTop: 8 }}
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // For static HTML report, data is injected at build time
 const STATIC_DATA: HttpPair[] | null =
@@ -16,11 +42,18 @@ const STATIC_DATA: HttpPair[] | null =
     ? (window as unknown as { ccTraceData: HttpPair[] }).ccTraceData
     : null;
 
+// Only connect to a live server when not rendering a static report and the host is non-empty
+// (file:// URLs have an empty host, which would make `new WebSocket("ws://")` throw).
+const WS_URL: string | null =
+  STATIC_DATA === null && typeof window !== "undefined" && window.location.host
+    ? `ws://${window.location.host}`
+    : null;
+
 export function App() {
   const livePairs = useWebSocket<HttpPair>(WS_URL);
   const pairs = STATIC_DATA ?? livePairs;
   const [view, setView] = useState<View>("conversations");
-  const [includeAll, setIncludeAll] = useState(false);
+  const [includeAll, setIncludeAll] = useState(true);
 
   const tabs: { id: View; label: string }[] = [
     { id: "conversations", label: "Conversations" },
@@ -65,13 +98,15 @@ export function App() {
             onChange={(e) => setIncludeAll(e.target.checked)}
             style={{ marginRight: 4 }}
           />
-          Show all requests
+          Include single-message requests
         </label>
       </div>
 
-      {view === "conversations" && <ConversationView pairs={pairs} includeAll={includeAll} />}
-      {view === "raw" && <RawPairsView pairs={pairs} />}
-      {view === "json" && <JsonView pairs={pairs} />}
+      <ErrorBoundary>
+        {view === "conversations" && <ConversationView pairs={pairs} includeAll={includeAll} />}
+        {view === "raw" && <RawPairsView pairs={pairs} />}
+        {view === "json" && <JsonView pairs={pairs} />}
+      </ErrorBoundary>
     </div>
   );
 }

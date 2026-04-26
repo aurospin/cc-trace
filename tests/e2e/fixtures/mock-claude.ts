@@ -1,12 +1,18 @@
 #!/usr/bin/env npx tsx
 /**
- * Simulates Claude Code making 3 HTTPS requests through the proxy then exiting.
- * Used in E2E tests as the --claude-path target.
+ * Mock claude binary for E2E tests. Reads HTTPS_PROXY from env and makes a sequence of
+ * requests that mirrors a real Claude Code session:
+ *   1. Single user message (1 message — filtered by default)
+ *   2. Tool-use turn: array-form tool_result content (3 messages — captured)
+ *   3. Streaming request (3 messages, stream:true — captured, response is SSE)
+ * Used by E2E tests as the --claude-path target.
  */
 import * as http from "node:http";
 import * as tls from "node:tls";
 
 const PROXY = process.env.HTTPS_PROXY;
+const TARGET_HOST = process.env.MOCK_TARGET_HOST ?? "api.anthropic.com";
+const TARGET_PORT = Number.parseInt(process.env.MOCK_TARGET_PORT ?? "443", 10);
 
 if (!PROXY) {
   process.stderr.write("mock-claude: HTTPS_PROXY not set\n");
@@ -18,28 +24,28 @@ const colonIdx = withoutProtocol.lastIndexOf(":");
 const proxyHost = withoutProtocol.slice(0, colonIdx);
 const proxyPort = Number.parseInt(withoutProtocol.slice(colonIdx + 1), 10);
 
-async function makeRequest(urlPath: string, messageCount: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 100,
-      messages: Array.from({ length: messageCount }, (_, i) => ({
-        role: i % 2 === 0 ? "user" : "assistant",
-        content: `message ${i}`,
-      })),
-    });
+interface RequestBody {
+  model: string;
+  max_tokens: number;
+  stream?: boolean;
+  system?: unknown;
+  messages: Array<{ role: string; content: unknown }>;
+}
 
+async function makeRequest(urlPath: string, body: RequestBody): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const bodyStr = JSON.stringify(body);
     const req = http.request({
       host: proxyHost,
       port: proxyPort,
       method: "CONNECT",
-      path: "api.anthropic.com:443",
+      path: `${TARGET_HOST}:${TARGET_PORT}`,
     });
 
     req.on("connect", (_res, socket) => {
       const tlsSocket = tls.connect({
         socket,
-        servername: "api.anthropic.com",
+        servername: TARGET_HOST,
         rejectUnauthorized: false,
       });
 
@@ -47,12 +53,12 @@ async function makeRequest(urlPath: string, messageCount: number): Promise<void>
         tlsSocket.write(
           [
             `POST ${urlPath} HTTP/1.1`,
-            "Host: api.anthropic.com",
+            `Host: ${TARGET_HOST}`,
             "Content-Type: application/json",
-            `Content-Length: ${Buffer.byteLength(body)}`,
+            `Content-Length: ${Buffer.byteLength(bodyStr)}`,
             "Connection: close",
             "",
-            body,
+            bodyStr,
           ].join("\r\n"),
         );
       });
@@ -67,10 +73,49 @@ async function makeRequest(urlPath: string, messageCount: number): Promise<void>
   });
 }
 
+const SYSTEM_BLOCKS = [
+  { type: "text", text: "You are Claude Code", cache_control: { type: "ephemeral" } },
+];
+
 (async () => {
-  // 2 requests with enough messages to be logged, 1 too short (filtered by default)
-  await makeRequest("/v1/messages", 4);
-  await makeRequest("/v1/messages", 4);
-  await makeRequest("/v1/messages", 1);
+  // Turn 1: initial single-message request (filtered by messageCount<1, captured by includeAll)
+  await makeRequest("/v1/messages", {
+    model: "claude-sonnet-4-6",
+    max_tokens: 100,
+    system: SYSTEM_BLOCKS,
+    messages: [{ role: "user", content: "List files" }],
+  });
+
+  // Turn 2: tool-result with array-form content (real Claude Code shape)
+  await makeRequest("/v1/messages", {
+    model: "claude-sonnet-4-6",
+    max_tokens: 100,
+    system: SYSTEM_BLOCKS,
+    messages: [
+      { role: "user", content: "List files" },
+      {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "tu_1", name: "ls", input: { path: "." } }],
+      },
+      {
+        role: "user",
+        content: [{ type: "tool_result", tool_use_id: "tu_1", content: "file1\nfile2" }],
+      },
+    ],
+  });
+
+  // Turn 3: streaming request — response is SSE (mock-api returns SSE when stream:true)
+  await makeRequest("/v1/messages", {
+    model: "claude-sonnet-4-6",
+    max_tokens: 100,
+    stream: true,
+    system: SYSTEM_BLOCKS,
+    messages: [
+      { role: "user", content: "List files" },
+      { role: "assistant", content: "Done." },
+      { role: "user", content: "Thanks" },
+    ],
+  });
+
   process.exit(0);
 })();

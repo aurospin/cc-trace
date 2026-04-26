@@ -162,4 +162,32 @@ describe("parseHttpPairs", () => {
     const convos = parseHttpPairs([pair], { includeAll: true });
     expect(convos[0].model).toBe("unknown");
   });
+
+  it("groups pairs with array-form system prompts (cache_control blocks) stably", () => {
+    // Real Claude Code requests send `system` as an array of text blocks with cache_control.
+    // Two requests with the same array system should group together; different systems should not.
+    const arrSysA = [{ type: "text", text: "You are A", cache_control: { type: "ephemeral" } }];
+    const arrSysB = [{ type: "text", text: "You are B", cache_control: { type: "ephemeral" } }];
+    const a1 = makePair("claude-sonnet-4-6", "ignored", 3);
+    (a1.request.body as { system: unknown }).system = arrSysA;
+    const a2 = makePair("claude-sonnet-4-6", "ignored", 3);
+    (a2.request.body as { system: unknown }).system = arrSysA;
+    const b1 = makePair("claude-sonnet-4-6", "ignored", 3);
+    (b1.request.body as { system: unknown }).system = arrSysB;
+    const convos = parseHttpPairs([a1, a2, b1]);
+    expect(convos).toHaveLength(2);
+  });
+
+  it("does not crash when user message content is an array of content blocks (tool_result)", () => {
+    // After the first tool call, Claude Code sends user messages with array content.
+    const pair = makePair("claude-sonnet-4-6", "sys", 3);
+    const body = pair.request.body as { messages: Array<{ role: string; content: unknown }> };
+    body.messages[2] = {
+      role: "user",
+      content: [{ type: "tool_result", tool_use_id: "tu_1", content: "ok" }],
+    };
+    const convos = parseHttpPairs([pair]);
+    expect(convos).toHaveLength(1);
+    expect(convos[0].pairs[0]).toBe(pair);
+  });
 });

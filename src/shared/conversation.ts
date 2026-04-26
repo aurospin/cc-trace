@@ -105,8 +105,11 @@ interface ParseOpts {
 }
 
 function getConversationKey(pair: HttpPair): string {
-  const body = pair.request.body as { model?: string; system?: string } | null;
-  return `${body?.model ?? ""}:${body?.system ?? ""}`;
+  const body = pair.request.body as { model?: string; system?: unknown } | null;
+  const system = body?.system;
+  const systemKey =
+    typeof system === "string" ? system : system === undefined ? "" : JSON.stringify(system);
+  return `${body?.model ?? ""}:${systemKey}`;
 }
 
 function getMessageCount(pair: HttpPair): number {

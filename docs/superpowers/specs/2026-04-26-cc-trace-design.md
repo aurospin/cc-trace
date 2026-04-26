@@ -314,6 +314,7 @@ Streaming responses use `body_raw` (raw SSE string) and `body: null`.
 - `cert-manager`: CA generation, leaf cert verification against CA, caching behaviour
 - `jsonl-writer`: serialisation, atomic write, handles malformed pair
 - `conversation.ts`: SSE assembly, tool call extraction, conversation grouping
+  - **Must cover real-world Claude Code request shapes:** array-form `system` with `cache_control`, user messages whose `content` is a content-block array (`tool_result`)
 - `html-generator`: template injection, base64 encoding, empty/large JSONL
 - `cli/options`: all subcommands and flag combinations parsed correctly
 - `session.ts`: path resolution, output-dir override, timestamp naming
@@ -326,9 +327,19 @@ Streaming responses use `body_raw` (raw SSE string) and `body: null`.
 - `cc-trace report` on fixture JSONL produces valid HTML
 
 ### E2E tests (`tests/e2e/`)
-- `mock-claude.ts`: small script that makes 3 HTTPS requests to `mock-api.ts` then exits
-- `mock-api.ts`: local HTTPS server with Anthropic-shaped responses (JSON + SSE)
-- Full `cc-trace attach` run: assert JSONL created, correct pair count, valid HTML, no leaked sockets
+- `mock-api.ts`: local HTTPS server returning Anthropic-shaped responses
+  - JSON for non-streaming requests, SSE event stream for `stream: true` requests
+- `mock-claude.ts`: standalone script (used as `--claude-path`) that exercises a realistic Claude Code session through `HTTPS_PROXY`:
+  1. Initial 1-message request (filtered by default; captured with `--include-all-requests`)
+  2. Tool-use turn with **array-form `tool_result` user content** (real Claude Code shape)
+  3. Streaming request (`stream: true`) producing an SSE response
+- Full pipeline test asserts:
+  - All three turn shapes are captured to JSONL without crash
+  - Array-form `system` and array-form user `content` round-trip intact
+  - SSE responses are captured into `body_raw` (not `body`)
+  - `parseHttpPairs` groups pairs across array-form system prompts without crashing
+  - `generateHTML` produces a self-contained file with all template markers replaced
+- Live server smoke test: a real `ws` client connects to `startLiveServer`, receives a `history` message on connect, and a `pair` message after a request flows through the proxy
 
 ### Coverage config
 ```json

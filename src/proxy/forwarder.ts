@@ -1,8 +1,27 @@
 import type * as http from "node:http";
 import * as https from "node:https";
+import * as zlib from "node:zlib";
 import type { HttpPair } from "../shared/types.js";
 
 const SENSITIVE = new Set(["authorization", "x-api-key", "cookie", "set-cookie"]);
+
+/**
+ * Decodes a response body buffer based on the upstream Content-Encoding header.
+ * Falls back to the raw buffer if decoding fails or the encoding is unknown.
+ * @param buf - concatenated raw response chunks as received from the upstream
+ * @param encoding - lowercased Content-Encoding header value (e.g. "gzip")
+ * @returns decoded buffer suitable for utf-8 decoding
+ */
+export function decodeBody(buf: Buffer, encoding: string): Buffer {
+  try {
+    if (encoding === "gzip") return zlib.gunzipSync(buf);
+    if (encoding === "deflate") return zlib.inflateSync(buf);
+    if (encoding === "br") return zlib.brotliDecompressSync(buf);
+  } catch {
+    /* fall through to raw bytes */
+  }
+  return buf;
+}
 
 /**
  * Redacts sensitive header values, keeping first 20 and last 4 characters.
@@ -85,7 +104,9 @@ export function forwardRequest(
 
         upstreamRes.on("end", () => {
           res.end();
-          const responseText = Buffer.concat(responseChunks).toString("utf-8");
+          const encoding = (upstreamRes.headers["content-encoding"] ?? "").toLowerCase();
+          const decoded = decodeBody(Buffer.concat(responseChunks), encoding);
+          const responseText = decoded.toString("utf-8");
 
           let parsedBody: unknown = null;
           let bodyRaw: string | null = null;
