@@ -28,9 +28,21 @@ function matchesFilter(value: unknown, name: string | number | null, filter: str
   return false;
 }
 
+const INDENT_PX = 14;
+
+function rowStyle(depth: number): React.CSSProperties {
+  // Tree indentation: each level adds INDENT_PX of left padding.
+  return { paddingLeft: `${depth * INDENT_PX}px` };
+}
+
+function ToggleSpacer(): React.ReactElement {
+  return <span className="toggle-spacer" aria-hidden />;
+}
+
 function JsonNode({ data, path, name, depth, filter, onPath }: NodeProps): React.ReactElement {
   const [open, setOpen] = useState(depth < 2);
   const isMatch = matchesFilter(data, name, filter);
+  const style = rowStyle(depth);
 
   const renderKey =
     name !== null ? (
@@ -39,7 +51,12 @@ function JsonNode({ data, path, name, depth, filter, onPath }: NodeProps): React
 
   if (data === null) {
     return (
-      <div className={`json-row${isMatch ? " match" : ""}`} onMouseEnter={() => onPath(path)}>
+      <div
+        className={`json-row${isMatch ? " match" : ""}`}
+        style={style}
+        onMouseEnter={() => onPath(path)}
+      >
+        <ToggleSpacer />
         {renderKey}
         <span className="json-null">null</span>
       </div>
@@ -48,7 +65,12 @@ function JsonNode({ data, path, name, depth, filter, onPath }: NodeProps): React
 
   if (typeof data === "string") {
     return (
-      <div className={`json-row${isMatch ? " match" : ""}`} onMouseEnter={() => onPath(path)}>
+      <div
+        className={`json-row${isMatch ? " match" : ""}`}
+        style={style}
+        onMouseEnter={() => onPath(path)}
+      >
+        <ToggleSpacer />
         {renderKey}
         <span className="json-string">{data.length > 200 ? `${data.slice(0, 200)}…` : data}</span>
       </div>
@@ -57,7 +79,12 @@ function JsonNode({ data, path, name, depth, filter, onPath }: NodeProps): React
 
   if (typeof data === "number") {
     return (
-      <div className={`json-row${isMatch ? " match" : ""}`} onMouseEnter={() => onPath(path)}>
+      <div
+        className={`json-row${isMatch ? " match" : ""}`}
+        style={style}
+        onMouseEnter={() => onPath(path)}
+      >
+        <ToggleSpacer />
         {renderKey}
         <span className="json-number">{data}</span>
       </div>
@@ -66,7 +93,12 @@ function JsonNode({ data, path, name, depth, filter, onPath }: NodeProps): React
 
   if (typeof data === "boolean") {
     return (
-      <div className={`json-row${isMatch ? " match" : ""}`} onMouseEnter={() => onPath(path)}>
+      <div
+        className={`json-row${isMatch ? " match" : ""}`}
+        style={style}
+        onMouseEnter={() => onPath(path)}
+      >
+        <ToggleSpacer />
         {renderKey}
         <span className="json-bool">{String(data)}</span>
       </div>
@@ -77,8 +109,10 @@ function JsonNode({ data, path, name, depth, filter, onPath }: NodeProps): React
     const empty = data.length === 0;
     return (
       <div onMouseEnter={() => onPath(path)}>
-        <div className={`json-row${isMatch ? " match" : ""}`}>
-          {!empty && (
+        <div className={`json-row${isMatch ? " match" : ""}`} style={style}>
+          {empty ? (
+            <ToggleSpacer />
+          ) : (
             <button type="button" className="toggle" onClick={() => setOpen(!open)}>
               {open ? "▾" : "▸"}
             </button>
@@ -112,8 +146,10 @@ function JsonNode({ data, path, name, depth, filter, onPath }: NodeProps): React
     const empty = keys.length === 0;
     return (
       <div onMouseEnter={() => onPath(path)}>
-        <div className={`json-row${isMatch ? " match" : ""}`}>
-          {!empty && (
+        <div className={`json-row${isMatch ? " match" : ""}`} style={style}>
+          {empty ? (
+            <ToggleSpacer />
+          ) : (
             <button type="button" className="toggle" onClick={() => setOpen(!open)}>
               {open ? "▾" : "▸"}
             </button>

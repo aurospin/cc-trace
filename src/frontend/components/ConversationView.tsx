@@ -1,4 +1,5 @@
 import type React from "react";
+import { useState } from "react";
 import { assembleStreaming, parseHttpPairs } from "../../shared/conversation.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
 import { TokenMeter } from "./TokenMeter.js";
@@ -23,12 +24,18 @@ function getAssistantBlocks(pair: HttpPair): ContentBlock[] {
   return body?.content ?? [];
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function formatDate(ts: number): string {
+  const d = new Date(ts * 1000);
+  return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}`;
+}
+
 function formatTime(ts: number): string {
   const d = new Date(ts * 1000);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 }
 
 function renderUserContent(content: unknown, exhibits: Map<string, string>): React.ReactNode {
@@ -91,6 +98,8 @@ function getLastUserMessage(pair: HttpPair): { role: string; content: unknown } 
 
 export function ConversationView({ pairs, includeAll }: Props) {
   const conversations = parseHttpPairs(pairs, { includeAll });
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [foldedTurns, setFoldedTurns] = useState<Set<string>>(new Set());
 
   if (conversations.length === 0) {
     return (
@@ -102,9 +111,32 @@ export function ConversationView({ pairs, includeAll }: Props) {
 
   const lastPairLoggedAt = pairs[pairs.length - 1]?.logged_at;
 
+  const toggleConv = (id: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTurn = (key: string) => {
+    setFoldedTurns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // Global turn counter across the entire transcript, so users see Turn 01,
+  // 02, 03… even if pairs land in separate conversation groups.
+  let globalTurn = 0;
+
   return (
     <div className="transcript">
       {conversations.map((conv) => {
+        const isCollapsed = collapsed.has(conv.id);
         // Build the exhibit index for this conversation: tool_use_id → label
         const exhibitIds: string[] = [];
         const exhibitsByTurn: { turnIdx: number; block: ToolUseBlock; label: string }[] = [];
@@ -123,100 +155,122 @@ export function ConversationView({ pairs, includeAll }: Props) {
 
         return (
           <section key={conv.id} className="conversation">
-            <div className="conversation-head">
+            <button
+              type="button"
+              className="conversation-head"
+              onClick={() => toggleConv(conv.id)}
+              title={isCollapsed ? "Expand conversation" : "Collapse conversation"}
+            >
+              <span className="fold-toggle" aria-hidden>
+                {isCollapsed ? "▸" : "▾"}
+              </span>
               <h2 className="serif">{conv.model}</h2>
               <span className="smallcaps">
                 {conv.pairs.length} turn{conv.pairs.length === 1 ? "" : "s"} ·{" "}
+                {formatDate(conv.startedAt.getTime() / 1000)}{" "}
                 {formatTime(conv.startedAt.getTime() / 1000)}
               </span>
-              <div style={{ marginLeft: "auto", minWidth: 200 }}>
-                <TokenMeter pairs={conv.pairs} />
-              </div>
-            </div>
+            </button>
 
-            {conv.pairs.map((pair, turnIdx) => {
-              const lastUser = getLastUserMessage(pair);
-              const assistantBlocks = getAssistantBlocks(pair);
-              const status = pair.response?.status_code ?? 0;
-              const isError = status >= 400;
-              const isFresh =
-                pair.logged_at === lastPairLoggedAt && turnIdx === conv.pairs.length - 1;
-              const turnExhibits = exhibitsByTurn.filter((x) => x.turnIdx === turnIdx);
+            {!isCollapsed &&
+              conv.pairs.map((pair, turnIdx) => {
+                globalTurn += 1;
+                const turnKey = `${conv.id}::${pair.logged_at}`;
+                const isFolded = foldedTurns.has(turnKey);
+                const lastUser = getLastUserMessage(pair);
+                const assistantBlocks = getAssistantBlocks(pair);
+                const status = pair.response?.status_code ?? 0;
+                const isError = status >= 400;
+                const isFresh =
+                  pair.logged_at === lastPairLoggedAt && turnIdx === conv.pairs.length - 1;
+                const turnExhibits = exhibitsByTurn.filter((x) => x.turnIdx === turnIdx);
 
-              return (
-                <article key={pair.logged_at} className="turn">
-                  <aside
-                    className={`turn-rail${isError ? " error" : ""}${isFresh ? " fresh" : ""}`}
-                  >
-                    <div className="turn-num">Turn {String(turnIdx + 1).padStart(2, "0")}</div>
-                    <div className="turn-time">{formatTime(pair.request.timestamp)}</div>
-                    {isError && (
-                      <div className="turn-time" style={{ color: "var(--accent)", marginTop: 6 }}>
-                        {status}
-                      </div>
-                    )}
-                    <TokenMeter pairs={[pair]} />
-                  </aside>
+                return (
+                  <article key={pair.logged_at} className="turn">
+                    <aside
+                      className={`turn-rail${isError ? " error" : ""}${isFresh ? " fresh" : ""}`}
+                    >
+                      <button
+                        type="button"
+                        className="turn-fold"
+                        onClick={() => toggleTurn(turnKey)}
+                        title={isFolded ? "Expand turn" : "Collapse turn"}
+                      >
+                        {isFolded ? "▸" : "▾"} Turn {pad2(globalTurn)}
+                      </button>
+                      <div className="turn-time">{formatDate(pair.request.timestamp)}</div>
+                      <div className="turn-time">{formatTime(pair.request.timestamp)}</div>
+                      {isError && (
+                        <div className="turn-time" style={{ color: "var(--accent)", marginTop: 6 }}>
+                          {status}
+                        </div>
+                      )}
+                      <TokenMeter pairs={[pair]} />
+                    </aside>
 
-                  <div className="turn-body">
-                    {lastUser && (
-                      <div className="speaker user">
-                        <span className="role">User</span>
-                        <div className="body">
-                          {renderUserContent(lastUser.content, exhibitMap)}
+                    {!isFolded && (
+                      <div className="turn-body">
+                        {lastUser && (
+                          <div className="speaker user">
+                            <span className="role">User</span>
+                            <div className="body">
+                              {renderUserContent(lastUser.content, exhibitMap)}
+                            </div>
+                          </div>
+                        )}
+                        <div className="speaker assistant">
+                          <span className="role">
+                            Assistant {pair.response?.body_raw ? "· streamed" : ""}
+                          </span>
+                          <div className="body">
+                            {assistantBlocks.length === 0 && pair.response === null && (
+                              <em style={{ color: "var(--ink-soft)" }}>
+                                No response (orphaned){pair.note ? ` — ${pair.note}` : ""}
+                              </em>
+                            )}
+                            {assistantBlocks.map((block, i) => {
+                              if (block.type === "text") {
+                                return (
+                                  <p
+                                    key={`t-${i}`}
+                                    style={{ whiteSpace: "pre-wrap", margin: "0 0 10px" }}
+                                  >
+                                    {block.text}
+                                  </p>
+                                );
+                              }
+                              const label = exhibitMap.get(block.id) ?? "?";
+                              return (
+                                <span key={`u-${i}`} className="exhibit-chip">
+                                  Exhibit {label} — {block.name}
+                                </span>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     )}
-                    <div className="speaker assistant">
-                      <span className="role">
-                        Assistant {pair.response?.body_raw ? "· streamed" : ""}
-                      </span>
-                      <div className="body">
-                        {assistantBlocks.length === 0 && pair.response === null && (
-                          <em style={{ color: "var(--ink-soft)" }}>
-                            No response (orphaned){pair.note ? ` — ${pair.note}` : ""}
-                          </em>
-                        )}
-                        {assistantBlocks.map((block, i) => {
-                          if (block.type === "text") {
-                            return (
-                              <p
-                                key={`t-${i}`}
-                                style={{ whiteSpace: "pre-wrap", margin: "0 0 10px" }}
-                              >
-                                {block.text}
-                              </p>
-                            );
-                          }
-                          const label = exhibitMap.get(block.id) ?? "?";
-                          return (
-                            <span key={`u-${i}`} className="exhibit-chip">
-                              Exhibit {label} — {block.name}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
 
-                  <aside className="turn-margin">
-                    {turnExhibits.length === 0 && (
-                      <span style={{ color: "var(--ink-soft)" }}>—</span>
+                    {!isFolded && (
+                      <aside className="turn-margin">
+                        {turnExhibits.length === 0 && (
+                          <span style={{ color: "var(--ink-soft)" }}>—</span>
+                        )}
+                        {turnExhibits.map(({ block, label }) => (
+                          <div key={block.id} className="exhibit-card">
+                            <span className="label">Exhibit {label}</span>
+                            <div className="name">{block.name}</div>
+                            <details>
+                              <summary>input</summary>
+                              <pre>{JSON.stringify(block.input, null, 2)}</pre>
+                            </details>
+                          </div>
+                        ))}
+                      </aside>
                     )}
-                    {turnExhibits.map(({ block, label }) => (
-                      <div key={block.id} className="exhibit-card">
-                        <span className="label">Exhibit {label}</span>
-                        <div className="name">{block.name}</div>
-                        <details>
-                          <summary>input</summary>
-                          <pre>{JSON.stringify(block.input, null, 2)}</pre>
-                        </details>
-                      </div>
-                    ))}
-                  </aside>
-                </article>
-              );
-            })}
+                  </article>
+                );
+              })}
           </section>
         );
       })}
