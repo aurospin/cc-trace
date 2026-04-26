@@ -7,6 +7,7 @@ import { startSession } from "../../logger/session.js";
 import { ensureCA } from "../../proxy/cert-manager.js";
 import { startProxy } from "../../proxy/server.js";
 import { generateHTML } from "../../report/html-generator.js";
+import { isMessagesBody } from "../../shared/guards.js";
 import type { ParsedArgs } from "../options.js";
 
 function findClaudePath(custom?: string): string {
@@ -58,8 +59,7 @@ export async function runAttach(args: ParsedArgs): Promise<void> {
   const writer = createWriter(session.jsonlPath);
 
   proxy.emitter.on("pair", (pair) => {
-    const body = pair.request.body as { messages?: unknown[] } | null;
-    const messageCount = body?.messages?.length ?? 0;
+    const messageCount = isMessagesBody(pair.request.body) ? pair.request.body.messages.length : 0;
     const isMessages = pair.request.url.includes("/v1/messages");
     const shouldLog = args.includeAllRequests || (isMessages && messageCount >= 1);
     if (shouldLog) {

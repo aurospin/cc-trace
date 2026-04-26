@@ -160,7 +160,7 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 - [ ] T055a [US3] Audit FR-008: `grep -rnE "^(export )?(interface|type) (HttpPair|StatusMeta|WsFrame)" src/` returns matches in exactly one file (`src/shared/types.ts`). Zero parallel declarations.
 - [ ] T055b [US3] Verify FR-013 final eligibility: for each file in `src/shared/`, run `grep -rln "from .*shared/<basename>" src/` and confirm ≥2 distinct importing scopes (cross-boundary backend↔frontend OR ≥2 feature folders). Document the importer list per file in the US3 PR description.
 - [ ] T056 [US3] Run `npm run build`; confirm dist artifacts produced and the report bundle still opens from `file://`.
-- [ ] T057 [US3] Squash-merge US3 PR into `002-structural-refactor`.
+- [X] T057 [US3] Squash-merge US3 PR into `002-structural-refactor`. **Committed as 28c2f06.**
 
 **Checkpoint US3**: Five feature folders under `src/frontend/`. `src/shared/` contains only `types.ts`, `version.ts`, `template.ts`. All tests green. CLAUDE.md and vitest.config.ts in sync.
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isContentBody } from "../../shared/guards.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
 import { exhibitLabel } from "./ExhibitList.js";
 import { TurnRow, formatDate, formatTime } from "./TurnRow.js";
@@ -13,8 +14,7 @@ function getAssistantBlocks(pair: HttpPair): ContentBlock[] {
   const resp = pair.response;
   if (!resp) return [];
   if (resp.body_raw) return assembleStreaming(resp.body_raw).content;
-  const body = resp.body as { content?: ContentBlock[] } | null;
-  return body?.content ?? [];
+  return isContentBody(resp.body) ? (resp.body.content as ContentBlock[]) : [];
 }
 
 export function ConversationView({ pairs, includeAll }: Props) {
