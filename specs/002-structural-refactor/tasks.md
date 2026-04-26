@@ -201,7 +201,7 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 - [ ] T077 [P] [US4] Replace cast at `src/cli/options.ts:108` (`(err as { code?: string })?.code`) with `isErrorWithCode` from `src/shared/guards.ts` (defined per data-model.md US4 table; tests added in Phase 6 test sub-phase).
 - [ ] T078 [US4] Audit: run `grep -rnE "\bas \{[^}]" src/` and confirm zero matches in non-test files.
 - [ ] T079 [US4] Run `npm run lint && npm run typecheck && npm run test`; confirm all green, coverage thresholds hold, bundle-size assertion green. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
-- [ ] T080 [US4] Squash-merge US4 PR into `002-structural-refactor`.
+- [X] T080 [US4] Squash-merge US4 PR into `002-structural-refactor`. **Committed as 316cc14.**
 
 **Checkpoint US4**: `src/shared/guards.ts` exists with paired tests at 100%. Zero inline `as { ... }` casts in source. All tests green.
 

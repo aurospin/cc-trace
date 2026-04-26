@@ -10,7 +10,7 @@ Every test tier MUST pass 100%. Coverage:
 - **E2E**: ≥70%
 
 Code rules:
-- No `any`, `@ts-ignore`, or `as unknown as X` — narrow `unknown` with type guards
+- No `any`, `@ts-ignore`, `as unknown as X`, or inline `as { ... }` shape casts — narrow `unknown` via the named guards in `src/shared/guards.ts` (add new guards with paired accept/reject tests)
 - No `console.log` in `src/` — use `process.stdout.write` / `process.stderr.write`
 - Public functions: JSDoc `@param` / `@returns`
 - Biome: zero warnings
@@ -52,6 +52,7 @@ npx vitest run tests/unit/<file>.test.ts   # single test file
 | `report/template.ts` | `substituteTokens(tpl, repl)` — sorts keys by length desc to avoid `__FOO__` / `__FOOBAR__` crosstalk |
 | `shared/types.ts` | Cross-tier type declarations — Node-free, no runtime code |
 | `shared/version.ts` | Reads `package.json` once and exports `PKG_VERSION` literal — single source for live server + HTML report |
+| `shared/guards.ts` | `(x: unknown) => x is T` type guards used at every module boundary in lieu of inline `as { ... }` casts. Each guard has paired accept/reject unit tests |
 | `cli/options.ts` | `parseArgs` throws `CliHelpDisplayed` for `--help`/`--version` (caller exits 0); rethrows all other Commander errors (caller exits 1). **Never collapse the catch into "return defaults"** — that silently runs `attach` on typos |
 | `frontend/styles.css` | Theming via CSS vars on `:root[data-mode="static"\|"live"]`. Components reference vars only — never literal colors |
 | `frontend/App.tsx` | Sets `documentElement.dataset.mode` from `window.ccTraceData` presence |

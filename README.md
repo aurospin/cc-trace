@@ -203,30 +203,26 @@ src/
 │   └── broadcaster.ts        # WebSocket client management
 ├── report/
 │   ├── html-generator.ts     # self-contained HTML builder
+│   ├── template.ts           # token-substitution helper
 │   └── template.html         # report template
 ├── shared/
 │   ├── types.ts              # HttpPair, Session, Conversation, etc.
-│   └── conversation.ts       # SSE assembly, conversation grouping
+│   ├── version.ts            # PKG_VERSION (read from package.json once)
+│   └── guards.ts             # type guards used at every module boundary
 └── frontend/                 # React UI (Vite-bundled into one IIFE)
     ├── index.html
     ├── index.tsx             # entry: imports fonts + styles + App
     ├── styles.css            # dual-mode theme via [data-mode] CSS vars
     ├── window.d.ts           # global Window augmentation (ccTraceData / ccTraceMeta)
     ├── App.tsx               # masthead, stats block, version label, tabs, mode switch
-    ├── components/
-    │   ├── ConversationView.tsx  # three-column transcript + Exhibits
-    │   ├── TokenMeter.tsx        # stacked cache/input/output bar
-    │   ├── RawPairsView.tsx      # tabular pair list
-    │   ├── JsonView.tsx          # per-pair Request/Response trees + breadcrumb + copy
-    │   ├── StatsBlock.tsx        # turns + requests + six token totals
-    │   └── VersionLabel.tsx      # version · iso-timestamp in masthead
-    └── hooks/
-        ├── useWebSocket.ts       # null-safe live stream hook
-        ├── useWsReconnects.ts    # sibling counter consumed by VersionLabel
-        └── useThrottledStats.ts  # throttled SessionStats derivation (live mode)
+    ├── conversation/         # ConversationView, TurnRow, ExhibitList, TokenMeter + conversation.ts (SSE assembly, grouping)
+    ├── jsonView/             # JsonView, JsonTree, JsonNode, JsonBreadcrumb, jsonViewReducer + json-path.ts
+    ├── stats/                # StatsBlock, useThrottledStats + stats.ts, throttle.ts
+    ├── rawPairs/             # RawPairsView (tabular pair list)
+    └── versionLabel/         # VersionLabel, useWebSocket, useWsReconnects
 ```
 
-Pure shared modules consumed by both backend and the Vite-bundled frontend live under `src/shared/`: `types.ts`, `conversation.ts` (SSE assembly + grouping), `stats.ts` (`computeStats` + `formatNumber`), `throttle.ts` (pure scheduler for the live stats throttle), and `json-path.ts` (`formatForClipboard` + `formatJsonPath`).
+Pure logic colocated with each frontend feature: `conversation/conversation.ts` (SSE assembly + grouping), `jsonView/json-path.ts` (clipboard + breadcrumb formatting), `stats/stats.ts` (`computeStats` + `formatNumber`), `stats/throttle.ts` (pure scheduler). `src/shared/` is reserved for modules imported by both backend and frontend, OR by ≥2 backend feature folders.
 
 ### Theming
 
