@@ -11,6 +11,10 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist/frontend'),
     emptyOutDir: true,
+    // Inline all fonts so the static HTML report is fully self-contained.
+    // 200kb covers Newsreader + JetBrains Mono woff2 weights; PNGs/larger
+    // assets would still be emitted as separate files.
+    assetsInlineLimit: 200 * 1024,
     rollupOptions: {
       output: {
         format: 'iife',

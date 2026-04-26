@@ -5,47 +5,47 @@ interface Props {
   pairs: HttpPair[];
 }
 
+function shortenUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.host}${u.pathname}`;
+  } catch {
+    return url;
+  }
+}
+
 export function RawPairsView({ pairs }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   if (pairs.length === 0) {
-    return <p style={{ color: "#888", padding: 16 }}>No requests captured yet.</p>;
+    return <div className="transcript-empty">No requests captured yet.</div>;
   }
 
   return (
-    <div>
-      {pairs.map((pair, i) => (
-        <div key={pair.logged_at} style={{ borderBottom: "1px solid #333", padding: "8px 0" }}>
-          <button
-            type="button"
-            onClick={() => setExpanded(expanded === i ? null : i)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#569cd6",
-              cursor: "pointer",
-              textAlign: "left",
-              width: "100%",
-            }}
-          >
-            [{pair.response?.status_code ?? "\u2014"}] {pair.request.method} {pair.request.url}
-            <small style={{ color: "#888", marginLeft: 8 }}>{pair.logged_at}</small>
-          </button>
-          {expanded === i && (
-            <pre
-              style={{
-                background: "#1e1e1e",
-                padding: 8,
-                borderRadius: 4,
-                fontSize: 11,
-                overflow: "auto",
-              }}
+    <div className="raw-list">
+      {pairs.map((pair, i) => {
+        const status = pair.response?.status_code ?? 0;
+        const cls = status >= 400 ? "err" : "ok";
+        return (
+          <div key={pair.logged_at}>
+            <button
+              type="button"
+              className="raw-row"
+              onClick={() => setExpanded(expanded === i ? null : i)}
             >
-              {JSON.stringify(pair, null, 2)}
-            </pre>
-          )}
-        </div>
-      ))}
+              <span className={`status ${cls}`}>{status || "—"}</span>
+              <span className="method">{pair.request.method}</span>
+              <span className="url">{shortenUrl(pair.request.url)}</span>
+              <span className="time">{pair.logged_at.slice(11, 19)}</span>
+            </button>
+            {expanded === i && (
+              <pre className="raw-detail mono" style={{ fontSize: 11, overflow: "auto" }}>
+                {JSON.stringify(pair, null, 2)}
+              </pre>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

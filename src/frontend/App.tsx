@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { HttpPair } from "../shared/types.js";
 import { ConversationView } from "./components/ConversationView.js";
 import { JsonView } from "./components/JsonView.js";
@@ -19,14 +19,10 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, Error
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 16, color: "#f48771" }}>
+        <div className="error-panel">
           <h2>Render error</h2>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{this.state.error.message}</pre>
-          <button
-            type="button"
-            onClick={() => this.setState({ error: null })}
-            style={{ padding: "6px 12px", marginTop: 8 }}
-          >
+          <pre>{this.state.error.message}</pre>
+          <button type="button" onClick={() => this.setState({ error: null })}>
             Retry
           </button>
         </div>
@@ -42,10 +38,10 @@ const STATIC_DATA: HttpPair[] | null =
     ? (window as unknown as { ccTraceData: HttpPair[] }).ccTraceData
     : null;
 
-// Only connect to a live server when not rendering a static report and the host is non-empty
-// (file:// URLs have an empty host, which would make `new WebSocket("ws://")` throw).
+const IS_LIVE = STATIC_DATA === null;
+
 const WS_URL: string | null =
-  STATIC_DATA === null && typeof window !== "undefined" && window.location.host
+  IS_LIVE && typeof window !== "undefined" && window.location.host
     ? `ws://${window.location.host}`
     : null;
 
@@ -55,58 +51,74 @@ export function App() {
   const [view, setView] = useState<View>("conversations");
   const [includeAll, setIncludeAll] = useState(true);
 
+  useEffect(() => {
+    document.documentElement.dataset.mode = IS_LIVE ? "live" : "static";
+  }, []);
+
   const tabs: { id: View; label: string }[] = [
-    { id: "conversations", label: "Conversations" },
-    { id: "raw", label: `Raw (${pairs.length})` },
+    { id: "conversations", label: "Transcript" },
+    { id: "raw", label: `Pairs · ${pairs.length}` },
     { id: "json", label: "JSON" },
   ];
 
-  return (
-    <div
-      style={{
-        fontFamily: "monospace",
-        background: "#1e1e1e",
-        color: "#d4d4d4",
-        minHeight: "100vh",
-        padding: 16,
-      }}
-    >
-      <h1 style={{ color: "#569cd6", marginBottom: 16 }}>cc-trace</h1>
+  const errorCount = pairs.filter((p) => p.response && p.response.status_code >= 400).length;
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+  return (
+    <div className="page">
+      <header className="masthead">
+        <h1 className="masthead-title serif">
+          cc-<em>trace</em>
+        </h1>
+        <span className="smallcaps">{IS_LIVE ? "Wire Room" : "Bound Transcript"}</span>
+        <div className="masthead-meta">
+          <span className="smallcaps">
+            <span className="heartbeat" />
+            {IS_LIVE ? "Listening" : "Archived"}
+          </span>
+          {errorCount > 0 && (
+            <span className="smallcaps" style={{ color: "var(--accent)" }}>
+              {errorCount} error{errorCount === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+      </header>
+
+      <nav className="tabs" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
+            role="tab"
+            aria-selected={view === tab.id}
+            className="tab"
             onClick={() => setView(tab.id)}
-            style={{
-              padding: "6px 12px",
-              background: view === tab.id ? "#569cd6" : "#2d2d2d",
-              color: view === tab.id ? "#fff" : "#d4d4d4",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-            }}
           >
             {tab.label}
           </button>
         ))}
-        <label style={{ marginLeft: "auto", color: "#888", fontSize: 12 }}>
+        <span className="tabs-spacer" />
+        <label className="tab-toggle">
           <input
             type="checkbox"
             checked={includeAll}
             onChange={(e) => setIncludeAll(e.target.checked)}
-            style={{ marginRight: 4 }}
           />
-          Include single-message requests
+          Include single-message turns
         </label>
-      </div>
+      </nav>
 
       <ErrorBoundary>
         {view === "conversations" && <ConversationView pairs={pairs} includeAll={includeAll} />}
         {view === "raw" && <RawPairsView pairs={pairs} />}
         {view === "json" && <JsonView pairs={pairs} />}
       </ErrorBoundary>
+
+      <footer className="footer">
+        <span>
+          cc-trace · {pairs.length} pair{pairs.length === 1 ? "" : "s"} captured
+        </span>
+        <span className="caret">{IS_LIVE ? "listening" : "self-contained report"}</span>
+      </footer>
     </div>
   );
 }
