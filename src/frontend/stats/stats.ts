@@ -51,8 +51,18 @@ function accumulate(totals: SessionTokenTotals, usage: UsageObj): void {
   }
 }
 
-function parseSseUsage(bodyRaw: string, totals: SessionTokenTotals): void {
+/**
+ * Reduces an SSE response body to a single per-pair usage object.
+ * - input / cache_* fields come from `message_start.message.usage` (one-shot).
+ * - output_tokens is last-wins across `message_delta.usage` events because
+ *   Anthropic reports the running cumulative count on every delta — summing
+ *   them would massively over-count.
+ * Returns null when the stream contains no `message_start` event.
+ */
+function parseSseUsage(bodyRaw: string): UsageObj | null {
   const lines = bodyRaw.split("\n");
+  let perPair: UsageObj | null = null;
+  let outputLastSeen: number | undefined;
   for (const line of lines) {
     if (!line.startsWith("data: ") || line === "data: [DONE]") continue;
     let event: unknown;
@@ -64,15 +74,17 @@ function parseSseUsage(bodyRaw: string, totals: SessionTokenTotals): void {
     if (!isObject(event)) continue;
     if (event.type === "message_start") {
       const u = readUsage(event.message);
-      if (u) accumulate(totals, u);
+      if (u) perPair = u;
     } else if (event.type === "message_delta") {
       const u = isObject(event.usage) ? (event.usage as UsageObj) : null;
-      if (u) {
-        // For message_delta only output_tokens advances; reuse accumulator.
-        totals.output = addNum(totals.output, u.output_tokens);
+      if (u && typeof u.output_tokens === "number") {
+        outputLastSeen = u.output_tokens;
       }
     }
   }
+  if (perPair === null) return null;
+  if (outputLastSeen !== undefined) perPair.output_tokens = outputLastSeen;
+  return perPair;
 }
 
 /**
@@ -101,12 +113,8 @@ export function computeStats(pairs: HttpPair[]): SessionStats {
     if (resp.status_code < 200 || resp.status_code >= 300) continue;
     if (!pair.request.url.includes("/v1/messages")) continue;
 
-    if (resp.body_raw !== null) {
-      parseSseUsage(resp.body_raw, tokens);
-    } else {
-      const u = readUsage(resp.body);
-      if (u) accumulate(tokens, u);
-    }
+    const u = resp.body_raw !== null ? parseSseUsage(resp.body_raw) : readUsage(resp.body);
+    if (u) accumulate(tokens, u);
   }
 
   const conversations = parseHttpPairs(pairs, { includeAll: true });
