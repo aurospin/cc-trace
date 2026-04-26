@@ -15,8 +15,9 @@ export function RawPairsView({ pairs }: Props) {
   return (
     <div>
       {pairs.map((pair, i) => (
-        <div key={i} style={{ borderBottom: "1px solid #333", padding: "8px 0" }}>
+        <div key={pair.logged_at} style={{ borderBottom: "1px solid #333", padding: "8px 0" }}>
           <button
+            type="button"
             onClick={() => setExpanded(expanded === i ? null : i)}
             style={{
               background: "none",

@@ -13,9 +13,19 @@ describe("parseArgs", () => {
     expect(result.jsonlPath).toBe("session.jsonl");
   });
 
+  it("report --output sets reportOutput", () => {
+    const result = parseArgs(["report", "session.jsonl", "--output", "/tmp/out.html"]);
+    expect(result.reportOutput).toBe("/tmp/out.html");
+  });
+
   it("index subcommand sets command=index", () => {
     const result = parseArgs(["index"]);
     expect(result.command).toBe("index");
+  });
+
+  it("index --output-dir sets outputDir", () => {
+    const result = parseArgs(["index", "--output-dir", "/tmp/traces"]);
+    expect(result.outputDir).toBe("/tmp/traces");
   });
 
   it("--output-dir sets outputDir", () => {
@@ -53,5 +63,10 @@ describe("parseArgs", () => {
     expect(result.openBrowser).toBe(true);
     expect(result.livePort).toBe(3000);
     expect(result.includeAllRequests).toBe(false);
+  });
+
+  it("--help triggers Commander throw and returns defaults", () => {
+    const result = parseArgs(["--help"]);
+    expect(result.command).toBe("attach");
   });
 });

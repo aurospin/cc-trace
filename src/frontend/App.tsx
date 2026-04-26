@@ -8,14 +8,11 @@ import { useWebSocket } from "./hooks/useWebSocket.js";
 type View = "conversations" | "raw" | "json";
 
 const WS_URL =
-  typeof window !== "undefined"
-    ? `ws://${window.location.host}`
-    : "ws://localhost:3000";
+  typeof window !== "undefined" ? `ws://${window.location.host}` : "ws://localhost:3000";
 
 // For static HTML report, data is injected at build time
 const STATIC_DATA: HttpPair[] | null =
-  typeof window !== "undefined" &&
-  (window as unknown as { ccTraceData?: HttpPair[] }).ccTraceData
+  typeof window !== "undefined" && (window as unknown as { ccTraceData?: HttpPair[] }).ccTraceData
     ? (window as unknown as { ccTraceData: HttpPair[] }).ccTraceData
     : null;
 
@@ -47,6 +44,7 @@ export function App() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setView(tab.id)}
             style={{
               padding: "6px 12px",

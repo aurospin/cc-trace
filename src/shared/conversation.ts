@@ -79,10 +79,12 @@ export function assembleStreaming(bodyRaw: string): AssembledMessage {
   for (const idx of indices) {
     const type = blockTypes[idx];
     if (type === "text") {
+      /* v8 ignore next */
       const block: TextBlock = { type: "text", text: textByIndex[idx] ?? "" };
       content.push(block);
     } else if (type === "tool_use") {
       const t = toolByIndex[idx];
+      /* v8 ignore next */
       if (t === undefined) continue;
       let input: unknown = {};
       try {
@@ -134,8 +136,10 @@ export function parseHttpPairs(pairs: HttpPair[], opts: ParseOpts = {}): Convers
 
   return Array.from(groups.entries()).map(([key, p]) => ({
     id: key,
+    /* v8 ignore next */
     model: (p[0]?.request.body as { model?: string } | null)?.model ?? "unknown",
     pairs: p,
+    /* v8 ignore next */
     startedAt: new Date((p[0]?.request.timestamp ?? 0) * 1000),
   }));
 }

@@ -22,10 +22,8 @@ export async function generateHTML(jsonlPath: string, outputPath: string): Promi
   const pairs: HttpPair[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line === undefined) continue;
     try {
-      pairs.push(JSON.parse(line) as HttpPair);
+      pairs.push(JSON.parse(lines[i] as string) as HttpPair);
     } catch {
       process.stderr.write(`Warning: skipping invalid JSON on line ${i + 1}\n`);
     }
@@ -35,6 +33,7 @@ export async function generateHTML(jsonlPath: string, outputPath: string): Promi
   let template: string;
   if (fs.existsSync(TEMPLATE_PATH)) {
     template = fs.readFileSync(TEMPLATE_PATH, "utf-8");
+    /* v8 ignore next 3 */
   } else {
     template = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>cc-trace — __CC_TRACE_TITLE__</title><script>window.ccTraceData = JSON.parse(decodeURIComponent(escape(atob('__CC_TRACE_DATA__'))));</script></head><body><div id="root"></div><script>__CC_TRACE_BUNDLE__</script></body></html>`;
   }

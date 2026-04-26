@@ -1,6 +1,6 @@
-import React from "react";
-import type { HttpPair } from "../../shared/types.js";
+import type React from "react";
 import { assembleStreaming, parseHttpPairs } from "../../shared/conversation.js";
+import type { HttpPair } from "../../shared/types.js";
 
 interface Props {
   pairs: HttpPair[];
@@ -16,12 +16,12 @@ function renderBody(pair: HttpPair): React.ReactNode {
       <div>
         {msg.content.map((block, i) =>
           block.type === "text" ? (
-            <p key={i} style={{ whiteSpace: "pre-wrap" }}>
+            <p key={`text-${i}`} style={{ whiteSpace: "pre-wrap" }}>
               {block.text}
             </p>
           ) : (
             <pre
-              key={i}
+              key={`tool-${i}`}
               style={{ background: "#1e1e1e", padding: 8, borderRadius: 4 }}
             >{`[tool: ${block.name}]\n${JSON.stringify(block.input, null, 2)}`}</pre>
           ),
@@ -33,9 +33,7 @@ function renderBody(pair: HttpPair): React.ReactNode {
     );
   }
   return (
-    <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
-      {JSON.stringify(resp.body, null, 2)}
-    </pre>
+    <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{JSON.stringify(resp.body, null, 2)}</pre>
   );
 }
 
@@ -61,7 +59,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
             const messages = reqBody?.messages ?? [];
             const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
             return (
-              <div key={i} style={{ marginBottom: 16 }}>
+              <div key={`pair-${i}`} style={{ marginBottom: 16 }}>
                 {lastUserMsg && (
                   <div
                     style={{

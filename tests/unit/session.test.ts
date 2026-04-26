@@ -38,4 +38,11 @@ describe("session", () => {
     const session = startSession({ outputDir: TMP });
     expect(session.startedAt).toBeInstanceOf(Date);
   });
+
+  it("defaults outputDir to .cc-trace in cwd when not provided", () => {
+    const defaultDir = path.join(process.cwd(), ".cc-trace");
+    const session = startSession({});
+    expect(session.outputDir).toBe(defaultDir);
+    fs.rmSync(defaultDir, { recursive: true, force: true });
+  });
 });
