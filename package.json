@@ -2,6 +2,7 @@
   "name": "cc-trace",
   "version": "0.2.0",
   "description": "MITM proxy logger for Claude Code API traffic",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "bin": {
     "cc-trace": "dist/cli/index.js"

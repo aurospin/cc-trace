@@ -227,4 +227,4 @@ All colors live in CSS variables under `:root[data-mode="static"]` and `:root[da
 
 ## License
 
-MIT
+GPL-3.0-or-later — see [LICENSE](LICENSE) for the full text.

@@ -145,3 +145,8 @@ vite.config.ts.timestamp-*
 # cc-trace project-specific
 dist/
 .cc-trace/
+
+# Local-only — never push
+.DS_Store
+.claude/
+scripts/
