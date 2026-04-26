@@ -223,6 +223,14 @@ describe("parseArgs — error paths and edge cases", () => {
     expect(() => parseArgs(["frobnicate"])).toThrow();
   });
 
+  // Regression: `cc-trace index` previously fell through to attach defaults
+  // because parseArgs swallowed Commander errors. It must now throw so the
+  // entry point exits non-zero with Commander's "unknown command" message.
+  it("negative: `cc-trace index` (a removed subcommand) throws — does not silently run attach", () => {
+    expect(() => parseArgs(["index"])).toThrow();
+    expect(() => parseArgs(["index"])).not.toThrow(CliHelpDisplayed);
+  });
+
   it("negative: unknown flag on attach throws so the CLI can exit non-zero", () => {
     expect(() => parseArgs(["attach", "--unknown-flag"])).toThrow();
   });

@@ -14,6 +14,9 @@ export interface JsonlWriter {
  * @returns JsonlWriter
  */
 export function createWriter(filePath: string): JsonlWriter {
+  // Ensure the file exists immediately so downstream consumers (e.g. report
+  // generation) succeed even when no pairs are captured.
+  fs.appendFileSync(filePath, "", "utf-8");
   return {
     write(pair: HttpPair): void {
       fs.appendFileSync(filePath, `${JSON.stringify(pair)}\n`, "utf-8");

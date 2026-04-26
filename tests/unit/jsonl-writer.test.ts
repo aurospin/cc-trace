@@ -47,6 +47,15 @@ describe("jsonl-writer", () => {
     expect(JSON.parse(lines[1]!).request.url).toBe("https://b.com");
   });
 
+  it("creates an empty file on construction even before any writes", () => {
+    const filePath = path.join(TMP, "empty.jsonl");
+    const writer = createWriter(filePath);
+    writer.close();
+
+    expect(fs.existsSync(filePath)).toBe(true);
+    expect(fs.readFileSync(filePath, "utf-8")).toBe("");
+  });
+
   it("each line is terminated with a newline", () => {
     const filePath = path.join(TMP, "newline.jsonl");
     const writer = createWriter(filePath);

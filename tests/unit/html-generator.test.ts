@@ -61,4 +61,21 @@ describe("html-generator", () => {
   it("throws if JSONL file does not exist", async () => {
     await expect(generateHTML("/nonexistent/path.jsonl", "/tmp/out.html")).rejects.toThrow();
   });
+
+  // Regression: when Claude exits before issuing any API calls the JSONL file
+  // is created (touched) but contains zero lines. The report must still
+  // generate a valid self-contained HTML — no "JSONL file not found" error,
+  // no missing template markers.
+  it("produces a valid HTML report from an empty JSONL (no captured pairs)", async () => {
+    const jsonlPath = path.join(TMP, "empty.jsonl");
+    const htmlPath = path.join(TMP, "empty.html");
+    fs.writeFileSync(jsonlPath, "", "utf-8");
+
+    await generateHTML(jsonlPath, htmlPath);
+    expect(fs.existsSync(htmlPath)).toBe(true);
+    const html = fs.readFileSync(htmlPath, "utf-8");
+    expect(html).toContain("window.ccTraceData");
+    expect(html).not.toContain("__CC_TRACE_DATA__");
+    expect(html).not.toContain("__CC_TRACE_TITLE__");
+  });
 });

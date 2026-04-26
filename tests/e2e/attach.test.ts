@@ -181,6 +181,27 @@ describe("full attach pipeline (E2E)", () => {
     await mockApi.close();
   }, 30000);
 
+  // Regression: a session that captures zero pairs (e.g. Claude exits before
+  // issuing any API calls) must still seal a JSONL and generate a valid HTML
+  // report — not crash with "JSONL file not found".
+  it("produces JSONL + HTML even when no pairs are captured (empty session)", async () => {
+    const session = startSession({ outputDir: TEST_DIR, name: "e2e-empty" });
+    const writer = createWriter(session.jsonlPath);
+
+    // Simulate Claude exiting immediately without any traffic.
+    writer.close();
+
+    expect(fs.existsSync(session.jsonlPath)).toBe(true);
+    expect(fs.readFileSync(session.jsonlPath, "utf-8")).toBe("");
+
+    await generateHTML(session.jsonlPath, session.htmlPath);
+    expect(fs.existsSync(session.htmlPath)).toBe(true);
+    const html = fs.readFileSync(session.htmlPath, "utf-8");
+    expect(html).not.toContain("__CC_TRACE_DATA__");
+    expect(html).not.toContain("__CC_TRACE_TITLE__");
+    expect(html).toContain('<div id="root"></div>');
+  });
+
   it("streams pairs to a connected WebSocket client in real time", async () => {
     const ca = ensureCA();
     const mockApi = await startMockApi();
