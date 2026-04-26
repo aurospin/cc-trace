@@ -5,9 +5,9 @@ Operational guidance for Claude Code in this repo. Principles and rationale live
 ## Quality Gates
 
 Every test tier MUST pass 100%. Coverage:
-- **Unit**: 100% on `src/` (excludes `frontend/**/*.tsx`, React hooks/reducers under `frontend/`, `shared/types.ts`, `proxy/server.ts`, `proxy/forwarder.ts`, `live-server/server.ts`, `cli/index.ts`, `cli/commands/**`). Pure-logic `.ts` files colocated under `frontend/<area>/` (`conversation.ts`, `json-path.ts`, `stats.ts`, `throttle.ts`) stay in the unit pool at 100%.
-- **Integration**: 100% on the files unit excludes
-- **E2E**: ≥70%
+- **Unit**: 100% on `src/`. Exclusions (`.tsx`, React hooks/reducers, I/O entry points) live in `vitest.config.ts` — the source of truth; do not duplicate the list here.
+- **Integration**: 100% on what unit excludes.
+- **E2E**: ≥70%.
 
 Code rules:
 - No `any`, `@ts-ignore`, `as unknown as X`, or inline `as { ... }` shape casts — narrow `unknown` via the named guards in `src/shared/guards.ts` (add new guards with paired accept/reject tests)
@@ -87,9 +87,23 @@ tests/e2e/          mock-claude.ts + mock-api.ts; full attach lifecycle
 ## Constraints
 
 - **macOS only** (`"os": ["darwin"]`), **Node ≥ 20** (uses `node:crypto`)
-- **Auth redaction** truncates `Authorization` before logging — never log full keys
 - **No literal colors in components** — all colors via CSS vars in `styles.css`
 - **No frontend runtime deps beyond React** — JSON tree, TokenMeter, transcript layout are hand-written. Don't add Tailwind / shadcn / react-json-view without approval
+
+## Security
+
+- **Credential redaction**: `Authorization` and `x-api-key` truncated in `proxy/forwarder.ts` before any sink (verified by `forwarder.test.ts`).
+- **Untrusted-payload rendering**: HTML report embeds pairs as base64 → `atob()` → `JSON.parse()` in a single `<script>`. Never interpolate captured strings into HTML, attributes, or `eval`-equivalents — a captured `<script>` in tool input is stored XSS against any reader.
+- **CA custody**: `~/.cc-trace/ca.key` MUST be `0600` (enforced in `proxy/cert-manager.ts`). Compromise = host-wide TLS forgery; never embed in JSONL, reports, logs, or error messages.
+- **Dependency review**: new runtime dep → justify in spec, run `npm audit`, resolve High/Critical, audit install-scripts and ownership churn before merge.
+
+### Repo & release hygiene
+
+- **Captures stay out of git**: `.gitignore` excludes `.cc-trace/`, `.env*`, `dist/`, `.claude/` — keep them so. Don't `git add -A` after running the proxy in-repo.
+- **Fixtures are synthetic**: any `tests/**/fixtures/*.jsonl` MUST be hand-built or redacted, never a verbatim capture.
+- **npm publish surface**: `package.json` `"files"` is the allowlist (`dist`, `README.md`, `LICENSE`). Verify with `npm pack --dry-run` before every release — zero matches for `tests/`, `specs/`, `.specify/`, `CLAUDE.md`.
+- **Pre-publish sweep**: grep working tree for `sk-ant-…`, `Bearer …`, real customer names in `specs/`.
+- **Signed tags + scoped CI**: `git tag -s` for releases. Future GitHub Actions on fork PRs MUST use `pull_request` (no secrets), never `pull_request_target` with PR checkout.
 
 ## Design Spec
 

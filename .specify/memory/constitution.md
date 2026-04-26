@@ -1,14 +1,16 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 → 1.1.1 (PATCH — wording tightened across all principles; cross-file duplication with CLAUDE.md removed; no semantic change)
-- Modified principles: I–VI reworded for concision; spirit unchanged
+- Version change: 1.2.0 → 1.2.1 (PATCH — Principle VII rationale tightened; CLAUDE.md duplication trimmed)
+- Modified principles: VII (rationale only; normative text unchanged)
 - Added sections: none
-- Removed sections: explicit commit-prefix enumeration in Development Workflow (lives in CLAUDE.md)
+- Removed sections: none
 - Templates requiring updates:
-  ✅ .specify/templates/{plan,spec,tasks}-template.md (no constitution-driven changes)
-  ✅ CLAUDE.md — Working Norms collapsed to a single-line pointer; the four norms now live solely in Principle VI
+  ✅ .specify/templates/{plan,spec,tasks}-template.md (no principle-count references)
+  ✅ CLAUDE.md — Quality Gates exclusion list replaced with pointer to vitest.config.ts; "No outbound calls" bullet dropped (subsumed by Principle II); "npm publish allowlist" updated from aspiration to verification
 
 Prior history:
+- 1.2.0 (2026-04-26): added Principle VII (Security Beyond the Capture Boundary); CLAUDE.md gained Security section.
+- 1.1.1 (2026-04-26): wording tightened across I–VI; cross-file duplication with CLAUDE.md removed.
 - 1.1.0 (2026-04-26): added Principle VI (Karpathy Guidelines); expanded Principle IV with explicit per-tier thresholds.
 - 1.0.0 (2026-04-26): initial ratification — Principles I–V, Operational Boundaries, Workflow, Governance.
 -->
@@ -62,6 +64,12 @@ For trivial tasks (typo fix, single-line tweak), apply judgment over ceremony �
 
 **Rationale**: The cheapest bug to fix is the one prevented by a question; the most expensive is the one introduced by a drive-by refactor. These norms keep change footprints small, intent explicit, and review load proportional to the actual problem.
 
+### VII. Security Beyond the Capture Boundary
+
+Principle I governs what enters disk; this governs everything afterward. Captured payloads MUST be treated as adversary-controlled when re-rendered — model output and tool input are arbitrary bytes reaching a JavaScript viewer. The MITM CA private key is host-wide TLS-forging material and MUST stay local, restricted, and absent from every shared artifact (report, JSONL, log, stack trace). New runtime dependencies MUST be reviewed for install-time scripts, network behavior, and ownership churn before merge.
+
+**Rationale**: Principle I protects credentials at capture; Principle VII protects everyone who touches the output afterward, plus the supply chain that ships the tool — a backdoored dependency inherits every credential the process already holds.
+
 ## Operational Boundaries
 
 Concrete platform, runtime, and dependency constraints (macOS-only, Node version, frontend dep policy, redaction format) live in [CLAUDE.md → Constraints](../../CLAUDE.md). Changes to those constraints MUST be reflected in CLAUDE.md and reviewed against the principles above — adding a runtime dependency, a network request, or a second component tree all require constitutional justification.
@@ -89,4 +97,4 @@ This constitution supersedes ad-hoc convention. Amendments require:
 
 **Compliance**: Code review MUST flag any change that conflicts with a principle and SHOULD cite it by name. Intentional conflicts MUST either update the constitution (with version bump) or be rejected — silent drift is not an outcome.
 
-**Version**: 1.1.1 | **Ratified**: 2026-04-26 | **Last Amended**: 2026-04-26
+**Version**: 1.2.1 | **Ratified**: 2026-04-26 | **Last Amended**: 2026-04-26

@@ -7,6 +7,11 @@
   "bin": {
     "cc-trace": "dist/cli/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && npm run build:assets && npm run build:frontend",
     "build:assets": "node -e \"require('node:fs').mkdirSync('dist/report',{recursive:true});require('node:fs').copyFileSync('src/report/template.html','dist/report/template.html')\"",
