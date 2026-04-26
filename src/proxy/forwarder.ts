@@ -33,6 +33,7 @@ function headersToRecord(raw: http.IncomingHttpHeaders): Record<string, string> 
  * @param res - outgoing HTTP response to send back to the client
  * @param hostname - upstream hostname (e.g. "api.anthropic.com")
  * @param port - upstream port (default 443)
+ * @param rejectUnauthorized - whether to reject self-signed upstream certs (default true)
  * @returns Promise resolving to the captured HttpPair
  */
 export function forwardRequest(
@@ -40,6 +41,7 @@ export function forwardRequest(
   res: http.ServerResponse,
   hostname: string,
   port: number,
+  rejectUnauthorized = true,
 ): Promise<HttpPair> {
   return new Promise((resolve, reject) => {
     const requestTimestamp = Date.now() / 1000;
@@ -63,7 +65,7 @@ export function forwardRequest(
         path: req.url ?? "/",
         method: req.method ?? "GET",
         headers: { ...req.headers, host: hostname },
-        rejectUnauthorized: true,
+        rejectUnauthorized,
       };
 
       const upstreamReq = https.request(forwardOptions, (upstreamRes) => {
