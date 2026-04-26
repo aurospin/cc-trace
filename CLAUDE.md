@@ -3,13 +3,24 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Quality Gates
-- 100% unit coverage on `src/` (excludes `frontend/`, `proxy/server.ts`, `proxy/forwarder.ts`, `live-server/server.ts` — covered by integration/E2E)
+- **Test gates** — every tier MUST pass 100%; coverage thresholds:
+  - **Unit**: 100% on `src/` (excludes `frontend/`, `proxy/server.ts`, `proxy/forwarder.ts`, `live-server/server.ts` — those are covered by integration)
+  - **Integration**: 100% on the files excluded from unit coverage above
+  - **E2E**: ≥70%
 - No `any`, `@ts-ignore`, or `as unknown as X` — narrow `unknown` with type guards
 - No `console.log` in `src/` — use `process.stdout.write` / `process.stderr.write`
 - Public functions: JSDoc with `@param` / `@returns`
 - Biome zero-warning, single-concern PRs, Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`, `docs:`)
 
 Pre-commit: `npm run lint && npm run typecheck && npm run test:unit`
+
+## Working Norms
+
+See `.specify/memory/constitution.md` (Principle VI) for rationale. In short, before/while coding:
+- **Think first** — state assumptions; if multiple interpretations exist, surface them; ask when unclear.
+- **Simplicity first** — minimum code; no speculative abstractions, flags, or error paths for impossible cases.
+- **Surgical changes** — every changed line traces to the request; no drive-by refactors, formatting, or comment rewrites.
+- **Goal-driven** — convert tasks into verifiable success criteria (often: a failing test → green) and loop until verified.
 
 ## Commands
 
@@ -77,3 +88,8 @@ tests/e2e/          mock-claude.ts + mock-api.ts; full attach lifecycle
 ## Design Spec
 
 `docs/superpowers/specs/2026-04-26-cc-trace-design.md`
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
