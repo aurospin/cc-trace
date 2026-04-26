@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import type { HttpPair } from "../shared/types.js";
-import { ConversationView } from "./components/ConversationView.js";
-import { JsonView } from "./components/JsonView.js";
 import { RawPairsView } from "./components/RawPairsView.js";
 import { StatsBlock } from "./components/StatsBlock.js";
 import { VersionLabel } from "./components/VersionLabel.js";
+import { ConversationView } from "./conversation/ConversationView.js";
 import { useWebSocket } from "./hooks/useWebSocket.js";
+import { JsonView } from "./jsonView/JsonView.js";
 
 type View = "conversations" | "raw" | "json";
 

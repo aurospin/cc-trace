@@ -147,4 +147,4 @@ Several call sites narrow `unknown` with single-use casts (`as { version: string
 - US4 is a P3 polish; if US1–US3 consume the available time budget, US4 can be deferred to a follow-up feature without blocking merge of US1–US3.
 - Existing `CLAUDE.md` constraints (no `any`, no `@ts-ignore`, no `console.log` in `src/`, JSDoc on public functions, no literal colors in components, no new frontend runtime deps) continue to apply — this refactor MUST NOT relax them.
 - The refactor will be implemented and merged on `002-structural-refactor`, not directly on `main`.
-- **Bundle-size baseline (FR-011 / SC-006)**: TBD — the US1 PR MUST replace this placeholder with the recorded uncompressed byte-size of the `.html` rendered from the `tests/e2e/` mock-claude JSONL fixture at the merge-base commit. Format: `Baseline: NNNNN bytes (commit <sha>, fixture <path>)`. Until US1 lands, FR-011's ±2% gate is informational only.
+- **Bundle-size baseline (FR-011 / SC-006)**: Baseline: 862531 bytes (commit 4dff88c, fixture tests/e2e/fixtures/bundle-baseline.jsonl). FR-011's ±2% gate is enforced by `tests/e2e/bundle-size.test.ts`.

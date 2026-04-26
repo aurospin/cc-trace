@@ -32,8 +32,8 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 
 **Purpose**: Branch baseline; nothing else needs to be set up — refactor edits existing code only.
 
-- [ ] T001 Confirm `002-structural-refactor` branch is checked out and clean: `git status` shows no modifications outside `specs/002-structural-refactor/` and `CLAUDE.md`.
-- [ ] T002 [P] Run baseline `npm run test` on `002-structural-refactor` HEAD; record pass count in PR description for SC-001 comparison.
+- [X] T001 Confirm `002-structural-refactor` branch is checked out and clean: `git status` shows no modifications outside `specs/002-structural-refactor/` and `CLAUDE.md`.
+- [X] T002 [P] Run baseline `npm run test` on `002-structural-refactor` HEAD; record pass count in PR description for SC-001 comparison. **Result: 151 tests pass (142 unit / 6 integration / 3 e2e), 100% src/ coverage, commit 4dff88c.**
 
 ---
 
@@ -53,32 +53,32 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 
 ### Bundle-size baseline (must complete before splits land)
 
-- [ ] T003 [US1] Build the project on baseline HEAD: run `npm run build` and copy the resulting `dist/frontend/index.js` byte count plus the rendered HTML byte count into a scratch note.
-- [ ] T004 [US1] Choose the e2e fixture that drives baseline — pick the largest existing JSONL under `tests/e2e/fixtures/` (or generate one from `mock-claude.ts` + `mock-api.ts` if none exists), commit it as `tests/e2e/fixtures/bundle-baseline.jsonl`.
-- [ ] T005 [US1] Render the fixture through `report/html-generator.ts` (one-off script invocation), capture uncompressed byte size of the resulting `.html`.
-- [ ] T006 [US1] Update `specs/002-structural-refactor/spec.md` Assumptions section: replace the `TBD` baseline placeholder with `Baseline: NNNNN bytes (commit <sha>, fixture tests/e2e/fixtures/bundle-baseline.jsonl)`.
-- [ ] T007 [US1] Create `tests/e2e/bundle-size.test.ts` that loads the fixture, renders via `report/html-generator.ts`, and asserts `Math.abs(html.length - BASELINE) / BASELINE <= 0.02`.
-- [ ] T008 [US1] Run `npm run test:e2e` (or equivalent) and confirm `bundle-size.test.ts` passes on baseline.
+- [X] T003 [US1] Build the project on baseline HEAD: run `npm run build` and copy the resulting `dist/frontend/index.js` byte count plus the rendered HTML byte count into a scratch note. **Bundle: 857307 bytes; HTML: 862531 bytes.**
+- [X] T004 [US1] Choose the e2e fixture that drives baseline — pick the largest existing JSONL under `tests/e2e/fixtures/` (or generate one from `mock-claude.ts` + `mock-api.ts` if none exists), commit it as `tests/e2e/fixtures/bundle-baseline.jsonl`.
+- [X] T005 [US1] Render the fixture through `report/html-generator.ts` (one-off script invocation), capture uncompressed byte size of the resulting `.html`. **862531 bytes.**
+- [X] T006 [US1] Update `specs/002-structural-refactor/spec.md` Assumptions section: replace the `TBD` baseline placeholder with `Baseline: NNNNN bytes (commit <sha>, fixture tests/e2e/fixtures/bundle-baseline.jsonl)`.
+- [X] T007 [US1] Create `tests/e2e/bundle-size.test.ts` that loads the fixture, renders via `report/html-generator.ts`, and asserts `Math.abs(html.length - BASELINE) / BASELINE <= 0.02`.
+- [X] T008 [US1] Run `npm run test:e2e` (or equivalent) and confirm `bundle-size.test.ts` passes on baseline.
 
 ### JsonView split (sequential — all touch one source file)
 
-- [ ] T009 [US1] Create directory `src/frontend/jsonView/`.
-- [ ] T010 [US1] Extract reducer state model to `src/frontend/jsonView/jsonViewReducer.ts`: move `JsonViewState`, `JsonViewAction`, `reducer`, `lookupExpanded`, `__all__` sentinel out of `src/frontend/components/JsonView.tsx`. Export each named symbol. ≤80 LOC target.
-- [ ] T011 [US1] Extract single-row renderer to `src/frontend/jsonView/JsonNode.tsx`: move the recursive node-renderer JSX + dispatch + hover-revealed copy button. ≤200 LOC. Imports `formatForClipboard` from current location.
-- [ ] T012 [US1] Extract per-tree wrapper to `src/frontend/jsonView/JsonTree.tsx`: `useReducer` setup, sticky `<header className="json-tree-label">`, Expand/Collapse-all buttons. ≤120 LOC.
-- [ ] T013 [US1] Extract breadcrumb to `src/frontend/jsonView/JsonBreadcrumb.tsx`: button rendering `formatJsonPath(lastFocused)`, copy on click. ≤50 LOC.
-- [ ] T014 [US1] Move slimmed container to `src/frontend/jsonView/JsonView.tsx`: owns `filter`, `filterTarget`, `lastFocused`; renders `JsonBreadcrumb` + per-pair `JsonTree` sections. ≤120 LOC. Delete `src/frontend/components/JsonView.tsx`.
-- [ ] T015 [US1] Update `src/frontend/App.tsx` import for `JsonView` from `./components/JsonView` → `./jsonView/JsonView`.
-- [ ] T016 [US1] Run `npm run lint && npm run typecheck && npm run test`; confirm all green and `tests/e2e/bundle-size.test.ts` still passes. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
+- [X] T009 [US1] Create directory `src/frontend/jsonView/`.
+- [X] T010 [US1] Extract reducer state model to `src/frontend/jsonView/jsonViewReducer.ts`: move `JsonViewState`, `JsonViewAction`, `reducer`, `lookupExpanded`, `__all__` sentinel out of `src/frontend/components/JsonView.tsx`. Export each named symbol. ≤80 LOC target.
+- [X] T011 [US1] Extract single-row renderer to `src/frontend/jsonView/JsonNode.tsx`: move the recursive node-renderer JSX + dispatch + hover-revealed copy button. ≤200 LOC. Imports `formatForClipboard` from current location.
+- [X] T012 [US1] Extract per-tree wrapper to `src/frontend/jsonView/JsonTree.tsx`: `useReducer` setup, sticky `<header className="json-tree-label">`, Expand/Collapse-all buttons. ≤120 LOC.
+- [X] T013 [US1] Extract breadcrumb to `src/frontend/jsonView/JsonBreadcrumb.tsx`: button rendering `formatJsonPath(lastFocused)`, copy on click. ≤50 LOC.
+- [X] T014 [US1] Move slimmed container to `src/frontend/jsonView/JsonView.tsx`: owns `filter`, `filterTarget`, `lastFocused`; renders `JsonBreadcrumb` + per-pair `JsonTree` sections. ≤120 LOC. Delete `src/frontend/components/JsonView.tsx`.
+- [X] T015 [US1] Update `src/frontend/App.tsx` import for `JsonView` from `./components/JsonView` → `./jsonView/JsonView`.
+- [X] T016 [US1] Run `npm run lint && npm run typecheck && npm run test`; confirm all green and `tests/e2e/bundle-size.test.ts` still passes. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
 
 ### ConversationView split (sequential — all touch one source file)
 
-- [ ] T017 [US1] Create directory `src/frontend/conversation/`.
-- [ ] T018 [US1] Extract per-turn row to `src/frontend/conversation/TurnRow.tsx`: global Turn #, `<TokenMeter>`, exhibit list rendering for one turn. ≤120 LOC.
-- [ ] T019 [US1] Extract auto-labeled exhibits to `src/frontend/conversation/ExhibitList.tsx`: tool-call + tool-result rendering. ≤80 LOC.
-- [ ] T020 [US1] Move slimmed container to `src/frontend/conversation/ConversationView.tsx`: groups pairs into turns via `parseHttpPairs`, renders `TurnRow` per turn. ≤140 LOC. Delete `src/frontend/components/ConversationView.tsx`.
-- [ ] T021 [US1] Update `src/frontend/App.tsx` import for `ConversationView` from `./components/ConversationView` → `./conversation/ConversationView`.
-- [ ] T022 [US1] Run `npm run lint && npm run typecheck && npm run test`; confirm pass count = baseline; `wc -l $(git ls-files 'src/**/*.ts' 'src/**/*.tsx')` shows zero files >300 LOC; `bundle-size.test.ts` green. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
+- [X] T017 [US1] Create directory `src/frontend/conversation/`.
+- [X] T018 [US1] Extract per-turn row to `src/frontend/conversation/TurnRow.tsx`: global Turn #, `<TokenMeter>`, exhibit list rendering for one turn. ≤120 LOC.
+- [X] T019 [US1] Extract auto-labeled exhibits to `src/frontend/conversation/ExhibitList.tsx`: tool-call + tool-result rendering. ≤80 LOC.
+- [X] T020 [US1] Move slimmed container to `src/frontend/conversation/ConversationView.tsx`: groups pairs into turns via `parseHttpPairs`, renders `TurnRow` per turn. ≤140 LOC. Delete `src/frontend/components/ConversationView.tsx`.
+- [X] T021 [US1] Update `src/frontend/App.tsx` import for `ConversationView` from `./components/ConversationView` → `./conversation/ConversationView`.
+- [X] T022 [US1] Run `npm run lint && npm run typecheck && npm run test`; confirm pass count = baseline; `wc -l $(git ls-files 'src/**/*.ts' 'src/**/*.tsx')` shows zero files >300 LOC; `bundle-size.test.ts` green. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
 - [ ] T023 [US1] Squash-merge US1 PR into `002-structural-refactor`.
 
 **Checkpoint US1**: `JsonView` lives in `src/frontend/jsonView/` (5 files, ≤300 LOC each); `ConversationView` lives in `src/frontend/conversation/` (3 files, ≤300 LOC each). All tests green. Bundle-size guardrail active.
