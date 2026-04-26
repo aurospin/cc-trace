@@ -177,6 +177,20 @@ describe("full attach pipeline (E2E)", () => {
     expect(html).not.toContain("__CC_TRACE_TITLE__");
     expect(html).toContain('<div id="root"></div>');
 
+    // When the frontend bundle is built, the StatsBlock container marker must
+    // appear in the embedded JS (proves <StatsBlock> wired into the tree).
+    const bundlePath = path.join(process.cwd(), "dist", "frontend", "index.js");
+    if (fs.existsSync(bundlePath)) {
+      expect(html).toContain("stats-block");
+    }
+
+    // US2: window.ccTraceMeta is embedded with the package.json version literal.
+    const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf-8")) as {
+      version: string;
+    };
+    expect(html).toContain("window.ccTraceMeta");
+    expect(html).toContain(`version: "${pkg.version}"`);
+
     await proxy.close();
     await mockApi.close();
   }, 30000);

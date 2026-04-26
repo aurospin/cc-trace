@@ -9,6 +9,8 @@ import type { Broadcaster } from "./broadcaster.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FRONTEND_DIR = path.join(__dirname, "..", "..", "dist", "frontend");
+const PKG_PATH = path.join(__dirname, "..", "..", "package.json");
+const PKG_VERSION = (JSON.parse(fs.readFileSync(PKG_PATH, "utf-8")) as { version: string }).version;
 
 export interface LiveServer {
   /** The TCP port the server is listening on */
@@ -29,6 +31,7 @@ export function startLiveServer(
   broadcaster: Broadcaster,
   session: Session,
 ): Promise<LiveServer> {
+  const startedAtIso = new Date().toISOString();
   const app = express();
 
   if (fs.existsSync(FRONTEND_DIR)) {
@@ -46,6 +49,8 @@ export function startLiveServer(
       pairCount: broadcaster.getPairs().length,
       jsonlPath: session.jsonlPath,
       htmlPath: session.htmlPath,
+      version: PKG_VERSION,
+      startedAtIso,
     });
   });
 

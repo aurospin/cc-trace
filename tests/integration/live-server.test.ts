@@ -1,8 +1,17 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as url from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { createBroadcaster } from "../../src/live-server/broadcaster.js";
 import { startLiveServer } from "../../src/live-server/server.js";
 import type { HttpPair, Session } from "../../src/shared/types.js";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const PKG_VERSION = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "..", "package.json"), "utf-8"),
+).version as string;
+const ISO_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 
 const session: Session = {
   id: "test",
@@ -43,6 +52,34 @@ describe("live server", () => {
     const res = await fetch(`http://localhost:${liveServer.port}/api/status`);
     const data = (await res.json()) as { id: string };
     expect(data.id).toBe("test");
+  });
+
+  it("C-V-04: GET /api/status includes version (matches package.json) and ISO startedAtIso", async () => {
+    const res = await fetch(`http://localhost:${liveServer.port}/api/status`);
+    const data = (await res.json()) as { version: string; startedAtIso: string };
+    expect(data.version).toBe(PKG_VERSION);
+    expect(data.startedAtIso).toMatch(ISO_REGEX);
+  });
+
+  it("C-V-05: restarting the live server advances startedAtIso", async () => {
+    const res1 = await fetch(`http://localhost:${liveServer.port}/api/status`);
+    const first = (await res1.json()) as { startedAtIso: string };
+
+    // Wait long enough that the second startedAtIso is observably distinct.
+    await new Promise((r) => setTimeout(r, 20));
+
+    const broadcaster2 = createBroadcaster();
+    const server2 = await startLiveServer(0, broadcaster2, session);
+    try {
+      const res2 = await fetch(`http://localhost:${server2.port}/api/status`);
+      const second = (await res2.json()) as { startedAtIso: string };
+      expect(second.startedAtIso).toMatch(ISO_REGEX);
+      expect(new Date(second.startedAtIso).getTime()).toBeGreaterThan(
+        new Date(first.startedAtIso).getTime(),
+      );
+    } finally {
+      await server2.close();
+    }
   });
 
   it("WebSocket receives pair pushed via broadcaster", async () => {

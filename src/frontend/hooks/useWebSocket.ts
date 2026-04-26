@@ -5,6 +5,27 @@ interface WsMessage<T> {
   data: T;
 }
 
+let reconnectCount = 0;
+const reconnectListeners = new Set<(n: number) => void>();
+
+/** Internal — read by useWsReconnects(). */
+export function getWsReconnectCount(): number {
+  return reconnectCount;
+}
+
+/** Internal — subscribed by useWsReconnects(). Returns an unsubscribe function. */
+export function subscribeWsReconnects(fn: (n: number) => void): () => void {
+  reconnectListeners.add(fn);
+  return () => {
+    reconnectListeners.delete(fn);
+  };
+}
+
+function bumpReconnects(): void {
+  reconnectCount += 1;
+  for (const fn of reconnectListeners) fn(reconnectCount);
+}
+
 /**
  * Connects to the cc-trace WebSocket server and returns accumulated pairs.
  * Automatically reconnects on disconnect. When wsUrl is null, the hook is a no-op
@@ -23,6 +44,7 @@ export function useWebSocket<T>(wsUrl: string | null): T[] {
     function connect() {
       if (cancelled) return;
       ws = new WebSocket(wsUrl as string);
+      bumpReconnects();
 
       ws.onmessage = (event: MessageEvent<string>) => {
         const msg = JSON.parse(event.data) as WsMessage<T | T[]>;
