@@ -92,5 +92,5 @@ tests/e2e/          mock-claude.ts + mock-api.ts; full attach lifecycle
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/001-stats-version-json-ui/plan.md`
+`specs/002-structural-refactor/plan.md`
 <!-- SPECKIT END -->
