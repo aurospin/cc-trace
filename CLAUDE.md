@@ -4,10 +4,10 @@ Operational guidance for Claude Code in this repo. Principles and rationale live
 
 ## Quality Gates
 
-Every test tier MUST pass 100%. Coverage:
-- **Unit**: 100% on `src/`. Exclusions (`.tsx`, React hooks/reducers, I/O entry points) live in `vitest.config.ts` — the source of truth; do not duplicate the list here.
-- **Integration**: 100% on what unit excludes.
-- **E2E**: ≥70%.
+Per-tier coverage ([Principle IV](.specify/memory/constitution.md) sets the 100%-pass rule):
+- **Unit**: 100% on `src/` (exclusions tracked in `vitest.config.ts`)
+- **Integration**: 100% on the files unit excludes
+- **E2E**: ≥70%
 
 Code rules:
 - No `any`, `@ts-ignore`, `as unknown as X`, or inline `as { ... }` shape casts — narrow `unknown` via the named guards in `src/shared/guards.ts` (add new guards with paired accept/reject tests)

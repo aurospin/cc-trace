@@ -1,14 +1,14 @@
 <!--
 Sync Impact Report
-- Version change: 1.2.0 → 1.2.1 (PATCH — Principle VII rationale tightened; CLAUDE.md duplication trimmed)
-- Modified principles: VII (rationale only; normative text unchanged)
+- Version change: 1.2.1 → 1.2.2 (PATCH — Principle IV wording tightened; CLAUDE.md pass-rate duplication removed)
+- Modified principles: IV (boundary + leak sentences merged; "at 100%" → "100%"; normative content unchanged)
 - Added sections: none
 - Removed sections: none
 - Templates requiring updates:
-  ✅ .specify/templates/{plan,spec,tasks}-template.md (no principle-count references)
-  ✅ CLAUDE.md — Quality Gates exclusion list replaced with pointer to vitest.config.ts; "No outbound calls" bullet dropped (subsumed by Principle II); "npm publish allowlist" updated from aspiration to verification
+  ✅ CLAUDE.md — Quality Gates no longer restates the 100%-pass rule; references Principle IV instead
 
 Prior history:
+- 1.2.1 (2026-04-26): Principle VII rationale tightened; CLAUDE.md duplication trimmed.
 - 1.2.0 (2026-04-26): added Principle VII (Security Beyond the Capture Boundary); CLAUDE.md gained Security section.
 - 1.1.1 (2026-04-26): wording tightened across I–VI; cross-file duplication with CLAUDE.md removed.
 - 1.1.0 (2026-04-26): added Principle VI (Karpathy Guidelines); expanded Principle IV with explicit per-tier thresholds.
@@ -41,7 +41,7 @@ Static reports and the live dashboard MUST render from the same React component 
 
 ### IV. Test Tiers Have Contracts
 
-Each test tier has a fixed I/O boundary that MUST be respected: unit mocks all I/O, integration uses real local servers (no Anthropic API), e2e drives the full attach lifecycle through mock-claude and mock-api. A test MUST NOT escape its tier (e.g. a unit test reaching localhost). Every tier MUST pass at 100%; per-tier coverage thresholds live in [CLAUDE.md → Quality Gates](../../CLAUDE.md).
+Each tier has a fixed I/O boundary — unit mocks all I/O, integration uses real local servers (no Anthropic API), e2e drives the full attach lifecycle through mock-claude and mock-api — and a test MUST NOT escape it (e.g. a unit test reaching localhost). Every tier MUST pass 100%; per-tier coverage thresholds live in [CLAUDE.md → Quality Gates](../../CLAUDE.md).
 
 **Rationale**: Coverage numbers are meaningless if tiers leak — flaky local failures masquerade as logic bugs and real regressions hide behind over-mocking. Strict boundaries plus an asymmetric coverage bar (full where mocking is cheap, partial where it is expensive) keep each tier's signal trustworthy without inflating e2e.
 
@@ -97,4 +97,4 @@ This constitution supersedes ad-hoc convention. Amendments require:
 
 **Compliance**: Code review MUST flag any change that conflicts with a principle and SHOULD cite it by name. Intentional conflicts MUST either update the constitution (with version bump) or be rejected — silent drift is not an outcome.
 
-**Version**: 1.2.1 | **Ratified**: 2026-04-26 | **Last Amended**: 2026-04-26
+**Version**: 1.2.2 | **Ratified**: 2026-04-26 | **Last Amended**: 2026-04-26
