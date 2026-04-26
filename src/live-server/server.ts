@@ -5,12 +5,11 @@ import * as url from "node:url";
 import express from "express";
 import { WebSocketServer } from "ws";
 import type { Session } from "../shared/types.js";
+import { PKG_VERSION } from "../shared/version.js";
 import type { Broadcaster } from "./broadcaster.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FRONTEND_DIR = path.join(__dirname, "..", "..", "dist", "frontend");
-const PKG_PATH = path.join(__dirname, "..", "..", "package.json");
-const PKG_VERSION = (JSON.parse(fs.readFileSync(PKG_PATH, "utf-8")) as { version: string }).version;
 
 export interface LiveServer {
   /** The TCP port the server is listening on */

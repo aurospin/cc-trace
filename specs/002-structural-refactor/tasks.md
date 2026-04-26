@@ -79,7 +79,7 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 - [X] T020 [US1] Move slimmed container to `src/frontend/conversation/ConversationView.tsx`: groups pairs into turns via `parseHttpPairs`, renders `TurnRow` per turn. ≤140 LOC. Delete `src/frontend/components/ConversationView.tsx`.
 - [X] T021 [US1] Update `src/frontend/App.tsx` import for `ConversationView` from `./components/ConversationView` → `./conversation/ConversationView`.
 - [X] T022 [US1] Run `npm run lint && npm run typecheck && npm run test`; confirm pass count = baseline; `wc -l $(git ls-files 'src/**/*.ts' 'src/**/*.tsx')` shows zero files >300 LOC; `bundle-size.test.ts` green. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
-- [ ] T023 [US1] Squash-merge US1 PR into `002-structural-refactor`.
+- [X] T023 [US1] Squash-merge US1 PR into `002-structural-refactor`. **Committed as ee0341c on feature branch.**
 
 **Checkpoint US1**: `JsonView` lives in `src/frontend/jsonView/` (5 files, ≤300 LOC each); `ConversationView` lives in `src/frontend/conversation/` (3 files, ≤300 LOC each). All tests green. Bundle-size guardrail active.
 
@@ -93,20 +93,20 @@ Single-package layout: source in `src/`, tests in `tests/{unit,integration,e2e}/
 
 ### Tests for US2 (add before/with the helpers per FR-005)
 
-- [ ] T024 [P] [US2] Create `tests/unit/version.test.ts`: assert `import { PKG_VERSION } from "../../src/shared/version.js"` matches `JSON.parse(fs.readFileSync("package.json")).version`.
-- [ ] T025 [P] [US2] Create `tests/unit/template.test.ts` with the three required cases per FR-005: empty replacements map, single-token substitution, multi-token substitution including overlapping substrings (e.g., `__FOO__` and `__FOOBAR__` in the same template).
+- [X] T024 [P] [US2] Create `tests/unit/version.test.ts`: assert `import { PKG_VERSION } from "../../src/shared/version.js"` matches `JSON.parse(fs.readFileSync("package.json")).version`.
+- [X] T025 [P] [US2] Create `tests/unit/template.test.ts` with the three required cases per FR-005: empty replacements map, single-token substitution, multi-token substitution including overlapping substrings (e.g., `__FOO__` and `__FOOBAR__` in the same template).
 
 ### Implementation for US2
 
-- [ ] T026 [P] [US2] Create `src/shared/version.ts`: read `package.json` once at module load, export `PKG_VERSION: string`. JSDoc on the exported constant.
-- [ ] T027 [P] [US2] Create `src/shared/template.ts`: export `substituteTokens(template: string, replacements: Record<string, string>): string`. Implementation iterates the replacements map and applies each substitution. JSDoc with `@param` and `@returns`.
-- [ ] T028 [US2] Update `src/report/html-generator.ts`: replace local `PKG_PATH` + `JSON.parse(...).version` with `import { PKG_VERSION } from "../shared/version.js"`. Replace the `.split(...).join(...)` chain with a single `substituteTokens(template, { __CC_TRACE_DATA__: dataB64, __CC_TRACE_BUNDLE__: bundle, __CC_TRACE_TITLE__: title, __CC_TRACE_VERSION__: PKG_VERSION, __CC_TRACE_GENERATED_AT__: generatedAt })` call.
-- [ ] T029 [US2] Update `src/live-server/server.ts`: replace local `PKG_PATH` + `JSON.parse(...).version` with `import { PKG_VERSION } from "../shared/version.js"`.
-- [ ] T030 [US2] Audit: search `src/` for any remaining direct `package.json` reads — confirm zero matches outside `src/shared/version.ts`. Search for any remaining `.split("__CC_TRACE` chains — confirm zero matches outside `src/shared/template.ts` (the helper itself MAY contain literal token patterns in comments/docs but no other file).
-- [ ] T030a [US2] Re-audit the meta-fetch-and-hydrate dedup target (data-model.md US2 row 3): `grep -rn "window.ccTraceMeta\|fetch.*api/status" src/`. If exactly one consumer remains, document the negative finding in the US2 PR description and skip extraction. If ≥2 consumers exist, extract into `src/shared/meta.ts` with paired unit tests before merging US2.
-- [ ] T031 [US2] Run `npm run lint && npm run typecheck && npm run test`; confirm all green and unit coverage is 100% line+branch on `src/shared/version.ts` and `src/shared/template.ts`. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
-- [ ] T032 [US2] Verify integration test `tests/integration/live-server.test.ts` (specifically `C-V-04` which asserts `version` matches `package.json`) still passes — proves end-to-end version resolution unchanged.
-- [ ] T033 [US2] Verify `tests/unit/html-generator.test.ts` (specifically `C-V-01`–`C-V-03`) still passes — proves token-substitution behavior unchanged.
+- [X] T026 [P] [US2] Create `src/shared/version.ts`: read `package.json` once at module load, export `PKG_VERSION: string`. JSDoc on the exported constant.
+- [X] T027 [P] [US2] Create `src/shared/template.ts`: export `substituteTokens(template: string, replacements: Record<string, string>): string`. Implementation iterates the replacements map and applies each substitution. JSDoc with `@param` and `@returns`.
+- [X] T028 [US2] Update `src/report/html-generator.ts`: replace local `PKG_PATH` + `JSON.parse(...).version` with `import { PKG_VERSION } from "../shared/version.js"`. Replace the `.split(...).join(...)` chain with a single `substituteTokens(template, { __CC_TRACE_DATA__: dataB64, __CC_TRACE_BUNDLE__: bundle, __CC_TRACE_TITLE__: title, __CC_TRACE_VERSION__: PKG_VERSION, __CC_TRACE_GENERATED_AT__: generatedAt })` call.
+- [X] T029 [US2] Update `src/live-server/server.ts`: replace local `PKG_PATH` + `JSON.parse(...).version` with `import { PKG_VERSION } from "../shared/version.js"`.
+- [X] T030 [US2] Audit: search `src/` for any remaining direct `package.json` reads — confirm zero matches outside `src/shared/version.ts`. Search for any remaining `.split("__CC_TRACE` chains — confirm zero matches outside `src/shared/template.ts` (the helper itself MAY contain literal token patterns in comments/docs but no other file).
+- [X] T030a [US2] Re-audit the meta-fetch-and-hydrate dedup target (data-model.md US2 row 3): `grep -rn "window.ccTraceMeta\|fetch.*api/status" src/`. If exactly one consumer remains, document the negative finding in the US2 PR description and skip extraction. If ≥2 consumers exist, extract into `src/shared/meta.ts` with paired unit tests before merging US2.
+- [X] T031 [US2] Run `npm run lint && npm run typecheck && npm run test`; confirm all green and unit coverage is 100% line+branch on `src/shared/version.ts` and `src/shared/template.ts`. **Contract gate**: `tests/e2e/attach.test.ts` (FR-009) and `tests/integration/live-server.test.ts` (FR-010) must pass with no test-assertion edits.
+- [X] T032 [US2] Verify integration test `tests/integration/live-server.test.ts` (specifically `C-V-04` which asserts `version` matches `package.json`) still passes — proves end-to-end version resolution unchanged.
+- [X] T033 [US2] Verify `tests/unit/html-generator.test.ts` (specifically `C-V-01`–`C-V-03`) still passes — proves token-substitution behavior unchanged.
 - [ ] T034 [US2] Squash-merge US2 PR into `002-structural-refactor`.
 
 **Checkpoint US2**: `src/shared/version.ts` and `src/shared/template.ts` exist with 100% coverage. `report/html-generator.ts` and `live-server/server.ts` import from them. All existing tests green.
