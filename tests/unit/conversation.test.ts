@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assembleStreaming, parseHttpPairs } from "../../src/shared/conversation.js";
+import { assembleStreaming, parseHttpPairs } from "../../src/frontend/conversation/conversation.js";
 import type { HttpPair } from "../../src/shared/types.js";
 
 const TOOL_SSE = [

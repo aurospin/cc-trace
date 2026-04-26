@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CcTraceMeta } from "../../shared/types.js";
-import { useWsReconnects } from "../hooks/useWsReconnects.js";
+import { useWsReconnects } from "./useWsReconnects.js";
 
 interface StatusPayload {
   version?: string;

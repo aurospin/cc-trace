@@ -1,3 +1,12 @@
+import {
+  isMessagesBody,
+  isModelBody,
+  isStreamContentBlock,
+  isStreamContentBlockDelta,
+  isStreamMessage,
+  isStreamMessageDelta,
+  isStreamUsage,
+} from "../../shared/guards.js";
 import type {
   AssembledMessage,
   ContentBlock,
@@ -5,7 +14,7 @@ import type {
   HttpPair,
   TextBlock,
   ToolUseBlock,
-} from "./types.js";
+} from "../../shared/types.js";
 
 interface SSEEvent {
   type: string;
@@ -39,23 +48,22 @@ export function assembleStreaming(bodyRaw: string): AssembledMessage {
   const blockTypes: Record<number, string> = {};
 
   for (const event of events) {
-    if (event.type === "message_start") {
-      const msg = event.message as { id: string; model: string; usage: { input_tokens: number } };
-      id = msg.id;
-      model = msg.model;
-      usage.input_tokens = msg.usage.input_tokens;
-    } else if (event.type === "content_block_start") {
+    if (event.type === "message_start" && isStreamMessage(event.message)) {
+      id = event.message.id;
+      model = event.message.model;
+      usage.input_tokens = event.message.usage.input_tokens;
+    } else if (event.type === "content_block_start" && isStreamContentBlock(event.content_block)) {
       const idx = event.index as number;
-      const block = event.content_block as { type: string; id?: string; name?: string };
+      const block = event.content_block;
       blockTypes[idx] = block.type;
       if (block.type === "text") {
         textByIndex[idx] = "";
       } else if (block.type === "tool_use") {
         toolByIndex[idx] = { id: block.id ?? "", name: block.name ?? "", inputRaw: "" };
       }
-    } else if (event.type === "content_block_delta") {
+    } else if (event.type === "content_block_delta" && isStreamContentBlockDelta(event.delta)) {
       const idx = event.index as number;
-      const delta = event.delta as { type: string; text?: string; partial_json?: string };
+      const delta = event.delta;
       if (delta.type === "text_delta" && textByIndex[idx] !== undefined) {
         textByIndex[idx] += delta.text ?? "";
       } else if (delta.type === "input_json_delta" && toolByIndex[idx] !== undefined) {
@@ -64,11 +72,11 @@ export function assembleStreaming(bodyRaw: string): AssembledMessage {
           tool.inputRaw += delta.partial_json ?? "";
         }
       }
-    } else if (event.type === "message_delta") {
-      const delta = event.delta as { stop_reason?: string };
-      const u = event.usage as { output_tokens?: number } | undefined;
-      if (delta.stop_reason) stopReason = delta.stop_reason;
-      if (u?.output_tokens !== undefined) usage.output_tokens = u.output_tokens;
+    } else if (event.type === "message_delta" && isStreamMessageDelta(event.delta)) {
+      if (event.delta.stop_reason) stopReason = event.delta.stop_reason;
+      if (isStreamUsage(event.usage) && event.usage.output_tokens !== undefined) {
+        usage.output_tokens = event.usage.output_tokens;
+      }
     }
   }
 
@@ -105,7 +113,7 @@ interface ParseOpts {
 }
 
 function getConversationKey(pair: HttpPair): string {
-  const body = pair.request.body as { model?: string; system?: unknown } | null;
+  const body = isModelBody(pair.request.body) ? pair.request.body : null;
   const system = body?.system;
   const systemKey =
     typeof system === "string" ? system : system === undefined ? "" : JSON.stringify(system);
@@ -113,8 +121,7 @@ function getConversationKey(pair: HttpPair): string {
 }
 
 function getMessageCount(pair: HttpPair): number {
-  const body = pair.request.body as { messages?: unknown[] } | null;
-  return body?.messages?.length ?? 0;
+  return isMessagesBody(pair.request.body) ? pair.request.body.messages.length : 0;
 }
 
 /**
@@ -140,7 +147,7 @@ export function parseHttpPairs(pairs: HttpPair[], opts: ParseOpts = {}): Convers
   return Array.from(groups.entries()).map(([key, p]) => ({
     id: key,
     /* v8 ignore next */
-    model: (p[0]?.request.body as { model?: string } | null)?.model ?? "unknown",
+    model: (isModelBody(p[0]?.request.body) ? p[0]?.request.body.model : undefined) ?? "unknown",
     pairs: p,
     /* v8 ignore next */
     startedAt: new Date((p[0]?.request.timestamp ?? 0) * 1000),

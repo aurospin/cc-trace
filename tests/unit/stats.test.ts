@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeStats, formatNumber } from "../../src/shared/stats.js";
+import { computeStats, formatNumber } from "../../src/frontend/stats/stats.js";
 import type { HttpPair } from "../../src/shared/types.js";
 
 const ZERO_TOKENS = {
@@ -307,6 +307,52 @@ describe("computeStats", () => {
     ].join("\n\n");
     const pair = makePair({ response: streamResponse(sse) });
     expect(computeStats([pair]).tokens.input).toBe(5);
+  });
+
+  it("SSE multiple message_delta events: output_tokens is last-wins, not summed", () => {
+    // Anthropic streams the running cumulative output_tokens on every delta.
+    // Old buggy behavior summed them: 1 + 50 + 120 + 180 = 351. Correct: 180.
+    const sse = [
+      `data: {"type":"message_start","message":{"id":"m","role":"assistant","model":"x","content":[],"usage":{"input_tokens":7,"output_tokens":1}}}`,
+      `data: {"type":"message_delta","delta":{"stop_reason":null},"usage":{"output_tokens":50}}`,
+      `data: {"type":"message_delta","delta":{"stop_reason":null},"usage":{"output_tokens":120}}`,
+      `data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":180}}`,
+      "",
+    ].join("\n\n");
+    const pair = makePair({ response: streamResponse(sse) });
+    const stats = computeStats([pair]);
+    expect(stats.tokens.input).toBe(7);
+    expect(stats.tokens.output).toBe(180);
+  });
+
+  it("SSE message_start with output_tokens but no message_delta: keeps message_start value", () => {
+    const sse = [
+      `data: {"type":"message_start","message":{"id":"m","role":"assistant","model":"x","content":[],"usage":{"input_tokens":4,"output_tokens":3}}}`,
+      "",
+    ].join("\n\n");
+    const pair = makePair({ response: streamResponse(sse) });
+    const stats = computeStats([pair]);
+    expect(stats.tokens.input).toBe(4);
+    expect(stats.tokens.output).toBe(3);
+  });
+
+  it("SSE with only message_delta events (no message_start) contributes no tokens", () => {
+    const sse = [
+      `data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":42}}`,
+      "",
+    ].join("\n\n");
+    const pair = makePair({ response: streamResponse(sse) });
+    expect(computeStats([pair]).tokens).toEqual(ZERO_TOKENS);
+  });
+
+  it("SSE message_delta with non-number output_tokens is ignored", () => {
+    const sse = [
+      `data: {"type":"message_start","message":{"id":"m","role":"assistant","model":"x","content":[],"usage":{"input_tokens":2,"output_tokens":1}}}`,
+      `data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":"nope"}}`,
+      "",
+    ].join("\n\n");
+    const pair = makePair({ response: streamResponse(sse) });
+    expect(computeStats([pair]).tokens.output).toBe(1);
   });
 
   it("SSE message_delta without usage object is ignored", () => {

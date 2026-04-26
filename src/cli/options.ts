@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { isErrorWithCode } from "../shared/guards.js";
 
 /**
  * Thrown by parseArgs when Commander has already printed --help or --version
@@ -105,12 +106,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
   try {
     program.parse(["node", "cc-trace", ...filteredArgv]);
   } catch (err) {
-    const code = (err as { code?: string })?.code;
     // --help / --version: Commander has already printed output to stdout.
     // Signal the caller via a sentinel so it can exit 0 without running a
     // command. (Returning defaults here would silently fall through to attach.)
     const helpCodes = new Set(["commander.helpDisplayed", "commander.help", "commander.version"]);
-    if (code !== undefined && helpCodes.has(code)) {
+    if (isErrorWithCode(err) && err.code !== undefined && helpCodes.has(err.code)) {
       throw new CliHelpDisplayed();
     }
     // Real input errors (unknown command/flag, missing arg) propagate so the

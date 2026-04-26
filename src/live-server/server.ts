@@ -4,13 +4,13 @@ import * as path from "node:path";
 import * as url from "node:url";
 import express from "express";
 import { WebSocketServer } from "ws";
+import { isAddressInfo } from "../shared/guards.js";
 import type { Session } from "../shared/types.js";
+import { PKG_VERSION } from "../shared/version.js";
 import type { Broadcaster } from "./broadcaster.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FRONTEND_DIR = path.join(__dirname, "..", "..", "dist", "frontend");
-const PKG_PATH = path.join(__dirname, "..", "..", "package.json");
-const PKG_VERSION = (JSON.parse(fs.readFileSync(PKG_PATH, "utf-8")) as { version: string }).version;
 
 export interface LiveServer {
   /** The TCP port the server is listening on */
@@ -72,7 +72,11 @@ export function startLiveServer(
 
   return new Promise((resolve, reject) => {
     server.listen(port, () => {
-      const addr = server.address() as { port: number };
+      const addr = server.address();
+      if (!isAddressInfo(addr)) {
+        reject(new Error("server.address() did not return network socket info"));
+        return;
+      }
       resolve({
         port: addr.port,
         close: () =>

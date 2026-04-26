@@ -11,6 +11,7 @@ const TEST_DIR = path.join(os.tmpdir(), `cc-trace-e2e-${Date.now()}`);
 
 process.env.CC_TRACE_DIR = path.join(TEST_DIR, "ca");
 
+import { parseHttpPairs } from "../../src/frontend/conversation/conversation.js";
 import { createBroadcaster } from "../../src/live-server/broadcaster.js";
 import { startLiveServer } from "../../src/live-server/server.js";
 import { createWriter } from "../../src/logger/jsonl-writer.js";
@@ -18,7 +19,6 @@ import { startSession } from "../../src/logger/session.js";
 import { ensureCA } from "../../src/proxy/cert-manager.js";
 import { startProxy } from "../../src/proxy/server.js";
 import { generateHTML } from "../../src/report/html-generator.js";
-import { parseHttpPairs } from "../../src/shared/conversation.js";
 import type { HttpPair } from "../../src/shared/types.js";
 import { startMockApi } from "./fixtures/mock-api.js";
 
