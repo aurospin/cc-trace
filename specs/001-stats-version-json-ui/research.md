@@ -32,7 +32,7 @@ All NEEDS CLARIFICATION items in Technical Context have been resolved against th
 
 For streaming responses, `usage` is split across events: `message_start.message.usage` carries `input_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens`, and the `cache_creation` object; `message_delta.usage` carries `output_tokens`. A missing field contributes `0`, never throws (FR-106).
 
-Request counts and per-method breakdown count **all** pairs (including failures and non-`/v1/messages` traffic when `--include-all-requests` is on), per FR-103 and FR-106a.
+Request counts and per-method breakdown count **all** pairs (including failures and non-`/v1/messages` traffic when `--include-all-requests` is on), per FR-103 and FR-106a. *(Flag renamed to `--conversations-only` with inverted default in v0.3.4: capture-all is now the default; the flag opts into the filter.)*
 
 **Rationale**: Direct mapping to the Anthropic response shape; matches the spec's clarifications (failed pairs count toward request totals but contribute zero tokens; legacy flat field stays separate from the two TTL variants).
 

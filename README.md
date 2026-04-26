@@ -21,6 +21,8 @@ A MITM proxy logger for Claude Code that captures all HTTP traffic between the C
 
 ## Installation
 
+Clone and build:
+
 ```bash
 git clone https://github.com/aurospin/cc-trace
 cd cc-trace
@@ -28,13 +30,42 @@ npm install
 npm run build
 ```
 
-Run directly without polluting your `PATH`:
+Then pick one of three ways to make `cc-trace` callable:
+
+**1. `npm link` — development (symlinked, picks up rebuilds):**
+
+```bash
+npm link          # registers a global symlink → repo's dist/
+cc-trace --help   # available anywhere
+# remove later with:
+npm unlink -g cc-trace
+```
+
+**2. `npm pack` + global install (frozen tarball, mirrors what an `npm publish` consumer gets):**
+
+```bash
+npm pack                          # → cc-trace-<version>.tgz
+npm install -g ./cc-trace-*.tgz
+```
+
+**3. Direct global install from the repo (one-shot):**
+
+```bash
+npm install -g .
+```
+
+Verify:
+
+```bash
+which cc-trace
+cc-trace --version
+```
+
+Or skip global install entirely and run from the build output:
 
 ```bash
 node dist/cli/index.js attach
 ```
-
-…or `npm link` if you prefer a global `cc-trace` command.
 
 On first run, cc-trace generates a local CA certificate at `~/.cc-trace/ca.crt` and signs per-domain leaf certificates in memory. No sudo is required.
 
@@ -56,7 +87,7 @@ Spawns Claude Code with the proxy configured, opens a browser tab at `http://loc
 |------|---------|-------------|
 | `--output-dir <dir>` | `.cc-trace/` | Directory for log and report files |
 | `--port <number>` | `3000` | Live server port |
-| `--include-all-requests` | off | Log all API requests, not just multi-turn conversations |
+| `--conversations-only` | off | Capture only multi-turn `/v1/messages` requests; default captures everything |
 | `--no-open` | — | Don't open the browser automatically |
 | `--claude-path <path>` | auto | Path to the `claude` binary |
 | `--run-with <args...>` | — | Extra arguments forwarded to Claude |
@@ -73,8 +104,8 @@ cc-trace attach --run-with chat --model claude-opus-4-7
 # Custom output directory and port
 cc-trace attach --output-dir ~/traces --port 4000
 
-# Log every request (not just conversations)
-cc-trace attach --include-all-requests
+# Restrict capture to multi-turn conversation requests only
+cc-trace attach --conversations-only
 ```
 
 ### `cc-trace report <jsonlPath>` — convert a log to HTML

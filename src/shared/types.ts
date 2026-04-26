@@ -47,7 +47,7 @@ export interface Config {
   outputDir: string;
   /** Default: 3000 */
   livePort: number;
-  includeAllRequests: boolean;
+  conversationsOnly: boolean;
   openBrowser: boolean;
   claudePath?: string;
   claudeArgs: string[];

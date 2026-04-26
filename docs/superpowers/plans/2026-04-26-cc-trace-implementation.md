@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Note (v0.3.4):** All references below to `--include-all-requests` and the `includeAllRequests` field describe the original design. In v0.3.4 the flag was renamed to `--conversations-only` with the default inverted (capture-all is now the default; the flag opts *into* the multi-turn `/v1/messages` filter), and the field was renamed `includeAllRequests` → `conversationsOnly`. Inlined code blocks here are historical and not line-edited.
+
 **Goal:** Build cc-trace — a MITM proxy CLI that logs Claude Code API traffic to JSONL, streams it to a live React UI, and generates a self-contained HTML report on exit.
 
 **Architecture:** Single Node.js process runs an HTTPS MITM proxy on a random port, spawns `claude` with `HTTPS_PROXY` + `NODE_EXTRA_CA_CERTS` env vars scoped to that child process only, pipes captured pairs to a live WebSocket server and JSONL file, then generates a self-contained HTML report on exit.

@@ -2,6 +2,8 @@
 **Date:** 2026-04-26  
 **Status:** Approved
 
+> **Note (v0.3.4):** This document references the original `--include-all-requests` flag (default off, opt-in to capture all). In v0.3.4 the flag was renamed to `--conversations-only` with the default inverted: capture-all is now the default; the flag opts *into* the multi-turn `/v1/messages` filter. The corresponding `ParsedArgs` field was renamed `includeAllRequests` → `conversationsOnly`. Code samples and behavior text below describe historical design intent and have not been line-edited.
+
 ## Overview
 
 `cc-trace` is a CLI tool that records all HTTP traffic between Claude Code and the Anthropic API, presenting it in a real-time web UI and a self-contained HTML report. It replaces the `--require` injection approach used by `claude-trace` with a MITM proxy that works with any Claude Code runtime — including compiled Bun binaries.

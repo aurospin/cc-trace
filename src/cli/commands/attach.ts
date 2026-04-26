@@ -61,7 +61,7 @@ export async function runAttach(args: ParsedArgs): Promise<void> {
   proxy.emitter.on("pair", (pair) => {
     const messageCount = isMessagesBody(pair.request.body) ? pair.request.body.messages.length : 0;
     const isMessages = pair.request.url.includes("/v1/messages");
-    const shouldLog = args.includeAllRequests || (isMessages && messageCount >= 1);
+    const shouldLog = !args.conversationsOnly || (isMessages && messageCount >= 1);
     if (shouldLog) {
       writer.write(pair);
       broadcaster.send(pair);

@@ -63,7 +63,7 @@ npx vitest run tests/unit/<file>.test.ts   # single test file
 | `frontend/versionLabel/*` | `VersionLabel` + `useWebSocket` (no-op when `wsUrl === null`, e.g. `file://`) + `useWsReconnects` |
 
 ### Two filters (easy to confuse)
-1. **Capture** (`attach.ts`): keep `/v1/messages` with `messages.length >= 1`. `--include-all-requests` disables.
+1. **Capture** (`attach.ts`): default keeps every request. `--conversations-only` restricts to `/v1/messages` with `messages.length >= 1`.
 2. **Display** (`parseHttpPairs`): defaults to `>= 3`; UI "Include single-message turns" checkbox flips this and **defaults on** so first prompts render. Pairs and JSON tabs ignore this filter.
 
 ### Two render modes (same component tree)

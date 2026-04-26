@@ -13,7 +13,7 @@ This contract is the binding behavioral surface that every refactor PR MUST pres
 
 ## Flags on `attach`
 
-- `--include-all-requests` — disables the `messages.length >= 1` capture filter.
+- `--include-all-requests` — disables the `messages.length >= 1` capture filter. *(Renamed to `--conversations-only` with inverted default in v0.3.4: capture-all is now the default; the flag opts into the filter.)*
 - (any other current flag) — preserved verbatim. The exhaustive list lives in `src/cli/options.ts`; the e2e suite enumerates the ones it asserts on.
 
 ## Environment variables (set on spawned Claude process)

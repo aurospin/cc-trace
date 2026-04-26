@@ -6,7 +6,7 @@ describe("parseArgs — defaults (no args)", () => {
     const result = parseArgs([]);
     expect(result.command).toBe("attach");
     expect(result.livePort).toBe(3000);
-    expect(result.includeAllRequests).toBe(false);
+    expect(result.conversationsOnly).toBe(false);
     expect(result.openBrowser).toBe(true);
     expect(result.claudeArgs).toEqual([]);
     expect(result.outputDir).toBeUndefined();
@@ -19,7 +19,7 @@ describe("parseArgs — defaults (no args)", () => {
     const result = parseArgs(["attach"]);
     expect(result.command).toBe("attach");
     expect(result.livePort).toBe(3000);
-    expect(result.includeAllRequests).toBe(false);
+    expect(result.conversationsOnly).toBe(false);
     expect(result.openBrowser).toBe(true);
     expect(result.outputDir).toBeUndefined();
     expect(result.claudePath).toBeUndefined();
@@ -84,15 +84,15 @@ describe("parseArgs — attach: --port", () => {
   });
 });
 
-describe("parseArgs — attach: --include-all-requests", () => {
-  it("positive: flag present sets includeAllRequests=true", () => {
-    const result = parseArgs(["attach", "--include-all-requests"]);
-    expect(result.includeAllRequests).toBe(true);
+describe("parseArgs — attach: --conversations-only", () => {
+  it("positive: flag present sets conversationsOnly=true", () => {
+    const result = parseArgs(["attach", "--conversations-only"]);
+    expect(result.conversationsOnly).toBe(true);
   });
 
-  it("negative: flag absent leaves includeAllRequests=false", () => {
+  it("negative: flag absent leaves conversationsOnly=false (capture-all default)", () => {
     const result = parseArgs(["attach"]);
-    expect(result.includeAllRequests).toBe(false);
+    expect(result.conversationsOnly).toBe(false);
   });
 });
 
@@ -168,7 +168,7 @@ describe("parseArgs — attach: combinations", () => {
       "/tmp/o",
       "--port",
       "4321",
-      "--include-all-requests",
+      "--conversations-only",
       "--no-open",
       "--claude-path",
       "/bin/claude",
@@ -179,7 +179,7 @@ describe("parseArgs — attach: combinations", () => {
     expect(result.command).toBe("attach");
     expect(result.outputDir).toBe("/tmp/o");
     expect(result.livePort).toBe(4321);
-    expect(result.includeAllRequests).toBe(true);
+    expect(result.conversationsOnly).toBe(true);
     expect(result.openBrowser).toBe(false);
     expect(result.claudePath).toBe("/bin/claude");
     expect(result.claudeArgs).toEqual(["chat", "--debug"]);
@@ -217,6 +217,14 @@ describe("parseArgs — report subcommand", () => {
 describe("parseArgs — error paths and edge cases", () => {
   it("positive: --help throws CliHelpDisplayed sentinel so the caller exits 0 without running a command", () => {
     expect(() => parseArgs(["--help"])).toThrow(CliHelpDisplayed);
+  });
+
+  it("positive: --version throws CliHelpDisplayed sentinel so the caller exits 0 after printing version", () => {
+    expect(() => parseArgs(["--version"])).toThrow(CliHelpDisplayed);
+  });
+
+  it("positive: -v short flag throws CliHelpDisplayed sentinel (alias of --version)", () => {
+    expect(() => parseArgs(["-v"])).toThrow(CliHelpDisplayed);
   });
 
   it("negative: unknown command throws so the CLI can exit non-zero", () => {

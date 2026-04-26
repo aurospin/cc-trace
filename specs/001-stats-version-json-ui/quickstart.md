@@ -62,7 +62,7 @@ In either the static report or the live dashboard, click the **JSON** tab.
 
 - [ ] **Empty session**: capture nothing (Ctrl-C immediately). Open the generated `.html`. Stats block renders with all-zero values; version label still shows.
 - [ ] **Missing usage fields**: confirm with an older payload (or a synthetic JSONL line) that any token pill missing from the payload renders as `0`, not blank.
-- [ ] **Failed request**: capture with `--include-all-requests` against a URL that returns 4xx/5xx. The pair counts toward `requestCount` and the per-method breakdown but contributes `0` to all six token totals.
+- [ ] **Failed request**: capture with `--include-all-requests` against a URL that returns 4xx/5xx. The pair counts toward `requestCount` and the per-method breakdown but contributes `0` to all six token totals. *(Flag renamed to `--conversations-only` in v0.3.4; default is now capture-all so this scenario fires without any flag.)*
 - [ ] **Large body**: navigate to the JSON tab on a pair > 1 MB pretty-printed. Click Expand all on the Response tree — UI remains responsive (no lockup beyond ~1 s).
 - [ ] **Live reconnect**: stop and restart the dashboard's WebSocket (e.g., temporarily kill the proxy). On reconnect, stats reconcile to the same totals a fresh page load would show; no double-counting.
 

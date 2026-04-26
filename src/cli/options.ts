@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { isErrorWithCode } from "../shared/guards.js";
+import { PKG_VERSION } from "../shared/version.js";
 
 /**
  * Thrown by parseArgs when Commander has already printed --help or --version
@@ -17,7 +18,7 @@ export interface ParsedArgs {
   outputDir?: string;
   outputName?: string;
   livePort: number;
-  includeAllRequests: boolean;
+  conversationsOnly: boolean;
   openBrowser: boolean;
   claudePath?: string;
   claudeArgs: string[];
@@ -53,7 +54,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let result: ParsedArgs = {
     command: "attach",
     livePort: 3000,
-    includeAllRequests: false,
+    conversationsOnly: false,
     openBrowser: true,
     claudeArgs: [],
   };
@@ -62,17 +63,29 @@ export function parseArgs(argv: string[]): ParsedArgs {
   program.exitOverride(); // throw instead of process.exit in tests
 
   program
+    .name("cc-trace")
+    .description("MITM proxy logger for Claude Code API traffic")
+    .version(PKG_VERSION, "-v, --version", "print version and exit");
+
+  program
     .command("attach")
-    .option("--output-dir <dir>", "output directory for logs")
-    .option("--port <number>", "live server port", "3000")
-    .option("--include-all-requests", "log all requests, not just conversations")
-    .option("--no-open", "do not open browser automatically")
-    .option("--claude-path <path>", "path to claude binary")
+    .description(
+      "capture a Claude Code session through the local MITM proxy (default if no command given)",
+    )
+    .option("--output-dir <dir>", "output directory for logs (default: .cc-trace/ in CWD)")
+    .option("--port <number>", "live dashboard port", "3000")
+    .option(
+      "--conversations-only",
+      "capture only multi-turn /v1/messages requests (default: capture all)",
+    )
+    .option("--no-open", "do not open the browser automatically")
+    .option("--claude-path <path>", "path to the claude binary (default: resolved from PATH)")
+    .option("--run-with <args...>", "forward all trailing args verbatim to claude (must be last)")
     .action(
       (opts: {
         outputDir?: string;
         port: string;
-        includeAllRequests?: boolean;
+        conversationsOnly?: boolean;
         open: boolean;
         claudePath?: string;
       }) => {
@@ -80,7 +93,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
           command: "attach",
           ...(opts.outputDir !== undefined && { outputDir: opts.outputDir }),
           livePort: Number.parseInt(opts.port, 10),
-          includeAllRequests: opts.includeAllRequests ?? false,
+          conversationsOnly: opts.conversationsOnly ?? false,
           openBrowser: opts.open,
           ...(opts.claudePath !== undefined && { claudePath: opts.claudePath }),
           claudeArgs: runWithArgs,
@@ -90,12 +103,13 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
   program
     .command("report <jsonlPath>")
-    .option("--output <path>", "output HTML path")
+    .description("convert an existing JSONL log into a self-contained HTML report")
+    .option("--output <path>", "output HTML path (default: alongside input, .html extension)")
     .action((jsonlPath: string, opts: { output?: string }) => {
       result = {
         command: "report",
         livePort: 3000,
-        includeAllRequests: false,
+        conversationsOnly: false,
         openBrowser: false,
         claudeArgs: [],
         jsonlPath,
