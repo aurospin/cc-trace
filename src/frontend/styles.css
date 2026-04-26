@@ -25,6 +25,17 @@
   --grain-opacity: 0.045;
   --scanline-opacity: 0;
 
+  --stats-pill-bg: var(--paper-edge);
+  --stats-pill-fg: var(--ink-deep);
+  --stats-pill-border: var(--rule-soft);
+
+  --breadcrumb-bg: var(--paper-edge);
+  --breadcrumb-fg: var(--ink-soft);
+  --copy-btn-bg: transparent;
+  --copy-btn-fg: var(--ink-soft);
+  --copy-btn-hover-bg: var(--paper-deep);
+  --sticky-label-bg: var(--paper);
+
   color-scheme: light;
 }
 
@@ -46,6 +57,17 @@
 
   --grain-opacity: 0;
   --scanline-opacity: 0.06;
+
+  --stats-pill-bg: var(--paper-edge);
+  --stats-pill-fg: var(--ink-deep);
+  --stats-pill-border: var(--rule-soft);
+
+  --breadcrumb-bg: var(--paper-edge);
+  --breadcrumb-fg: var(--ink-mid);
+  --copy-btn-bg: transparent;
+  --copy-btn-fg: var(--ink-mid);
+  --copy-btn-hover-bg: var(--paper-deep);
+  --sticky-label-bg: var(--paper);
 
   color-scheme: dark;
 }
@@ -159,6 +181,14 @@ body {
   align-items: baseline;
 }
 
+.version-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  min-width: 1px;
+}
+
 .heartbeat {
   width: 8px;
   height: 8px;
@@ -185,6 +215,57 @@ body {
     opacity: 1.0;
     transform: scale(1.15);
   }
+}
+
+/* ── Stats block ──────────────────────────────────────────────────────── */
+
+.stats-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 48px;
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--paper);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.stats-method-group,
+.stats-token-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.stats-token-group {
+  margin-left: auto;
+}
+
+.stats-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 9px;
+  background: var(--stats-pill-bg);
+  color: var(--stats-pill-fg);
+  border: 1px solid var(--stats-pill-border);
+  border-radius: 999px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.stats-pill-label {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-mid);
+}
+
+.stats-pill-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 /* ── Tab bar ──────────────────────────────────────────────────────────── */
@@ -788,6 +869,132 @@ body {
 
 .json-path:hover {
   color: var(--accent);
+}
+
+.json-breadcrumb {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  background: var(--breadcrumb-bg);
+  color: var(--breadcrumb-fg);
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-family: "JetBrains Mono", monospace;
+  margin-bottom: 12px;
+  cursor: pointer;
+  user-select: text;
+  letter-spacing: 0.02em;
+}
+
+.json-breadcrumb:hover {
+  color: var(--accent);
+}
+
+.json-target-toggle {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.json-target-toggle button {
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.json-target-toggle button.active {
+  background: var(--paper-deep);
+  color: var(--ink-deep);
+}
+
+.json-pair-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.json-pair-section {
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.json-tree-section {
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.json-tree-section:last-child {
+  border-bottom: none;
+}
+
+.json-tree-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--sticky-label-bg);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.json-tree-toolbar {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.json-tree-toolbar button {
+  background: transparent;
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 10px;
+  padding: 2px 8px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+}
+
+.json-tree-toolbar button:hover {
+  color: var(--ink-deep);
+  background: var(--paper-deep);
+}
+
+.json-copy {
+  background: var(--copy-btn-bg);
+  color: var(--copy-btn-fg);
+  border: none;
+  font: inherit;
+  font-size: 11px;
+  padding: 0 6px;
+  margin-left: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 80ms ease;
+}
+
+.json-row:hover .json-copy {
+  opacity: 1;
+}
+
+.json-copy:hover {
+  background: var(--copy-btn-hover-bg);
+  color: var(--ink-deep);
 }
 
 /* ── Footer ───────────────────────────────────────────────────────────── */

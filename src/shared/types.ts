@@ -92,3 +92,29 @@ export interface ToolCall {
   name: string;
   input: unknown;
 }
+
+/** Six independent token totals summed across all 2xx /v1/messages responses */
+export interface SessionTokenTotals {
+  cacheRead: number;
+  cacheCreationInput: number;
+  cacheCreation5m: number;
+  cacheCreation1h: number;
+  input: number;
+  output: number;
+}
+
+/** At-a-glance session aggregate derived from HttpPair[] */
+export interface SessionStats {
+  turnCount: number;
+  requestCount: number;
+  requestsByMethod: Record<string, number>;
+  tokens: SessionTokenTotals;
+}
+
+/** Build/start-time metadata exposed to the frontend */
+export interface CcTraceMeta {
+  /** package.json version at build/serve time */
+  version: string;
+  /** ISO-8601 UTC timestamp; report-generation time (static) or live-server start time (live) */
+  generatedAt: string;
+}

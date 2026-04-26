@@ -6,6 +6,8 @@ import type { HttpPair } from "../shared/types.js";
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const TEMPLATE_PATH = path.join(__dirname, "template.html");
 const BUNDLE_PATH = path.join(__dirname, "..", "..", "dist", "frontend", "index.js");
+const PKG_PATH = path.join(__dirname, "..", "..", "package.json");
+const PKG_VERSION = (JSON.parse(fs.readFileSync(PKG_PATH, "utf-8")) as { version: string }).version;
 
 /**
  * Generates a self-contained HTML report from a JSONL log file.
@@ -35,7 +37,7 @@ export async function generateHTML(jsonlPath: string, outputPath: string): Promi
     template = fs.readFileSync(TEMPLATE_PATH, "utf-8");
     /* v8 ignore next 3 */
   } else {
-    template = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>cc-trace — __CC_TRACE_TITLE__</title><script>window.ccTraceData = JSON.parse(decodeURIComponent(escape(atob('__CC_TRACE_DATA__'))));</script></head><body><div id="root"></div><script>__CC_TRACE_BUNDLE__</script></body></html>`;
+    template = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>cc-trace — __CC_TRACE_TITLE__</title><script>window.ccTraceData = JSON.parse(decodeURIComponent(escape(atob('__CC_TRACE_DATA__'))));</script><script>window.ccTraceMeta = { version: "__CC_TRACE_VERSION__", generatedAt: "__CC_TRACE_GENERATED_AT__" };</script></head><body><div id="root"></div><script>__CC_TRACE_BUNDLE__</script></body></html>`;
   }
 
   const dataB64 = Buffer.from(unescape(encodeURIComponent(JSON.stringify(pairs)))).toString(
@@ -48,13 +50,18 @@ export async function generateHTML(jsonlPath: string, outputPath: string): Promi
   }
 
   const title = path.basename(jsonlPath, ".jsonl");
+  const generatedAt = new Date().toISOString();
   const html = template
     .split("__CC_TRACE_DATA__")
     .join(dataB64)
     .split("__CC_TRACE_BUNDLE__")
     .join(bundle)
     .split("__CC_TRACE_TITLE__")
-    .join(title);
+    .join(title)
+    .split("__CC_TRACE_VERSION__")
+    .join(PKG_VERSION)
+    .split("__CC_TRACE_GENERATED_AT__")
+    .join(generatedAt);
 
   fs.writeFileSync(outputPath, html, "utf-8");
 }

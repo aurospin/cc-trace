@@ -5,11 +5,13 @@ A MITM proxy logger for Claude Code that captures all HTTP traffic between the C
 ## Features
 
 - **The Transcript UI** — three-column editorial layout: turn rail (per-turn token meter, full date + time, fold/unfold), conversation body, right-margin "Exhibits" for hoisted tool calls
+- **Session stats block** — single-row pill bar at the top of every view: turn count, requests-by-method, and six independent token totals (`cache_read` · `cache_create` · `ephemeral_5m` · `ephemeral_1h` · `input` · `output`) with `en-US` thousands separators. Live mode coalesces in-flight updates via a 250 ms throttle and flushes on settle
+- **Version + timestamp** — `<version> · <iso-timestamp>` in the masthead, embedded at generate time for static reports and hydrated from `/api/status` (with WS-reconnect retry) for the live dashboard
 - **Live view** — real-time web UI while Claude runs (default `localhost:3000`); pairs stream in over WebSocket
 - **HTML report** — self-contained single-file report on session exit; fonts and bundle inlined, opens from `file://`
 - **Dual-mode theme** — warm-paper *Bound Transcript* for static reports, graphite + amber *Wire Room* for the live dashboard
 - **JSONL archive** — one JSON object per request/response pair
-- **JSON tree inspector** — collapsible depth-indented hierarchy, filterable, click-to-copy paths
+- **JSON tree inspector** — per-pair stacked Request / Response sections with sticky labels, independent expand/collapse per tree, `Both | Request | Response` filter target toggle, hover-revealed copy buttons (subtree → pretty JSON, leaf → raw value), and a click-to-copy breadcrumb
 - **Streaming support** — reassembles SSE responses into readable messages with cache-aware token counts (`cache_read` / `cache_creation` / `input` / `output`)
 - **Compression aware** — decodes `gzip` / `deflate` / `br` upstream bodies before logging
 - **No sudo** — uses `HTTPS_PROXY` + `NODE_EXTRA_CA_CERTS` env vars scoped to the child process
@@ -106,7 +108,7 @@ cc-trace ships a single React app served in two modes — the same component tre
   - Right margin: tool calls auto-hoisted as numbered Exhibits ("Exhibit A", "B", …). The matching `tool_result` in a later turn is linked back as `re: Exhibit A` so you can scan tool flow at a glance.
   - Fold / unfold: click a conversation header to collapse the entire conversation; click any `Turn NN` label to fold a single turn while keeping its rail visible.
 - **Pairs** — compact tabular list of every captured pair (status · method · URL · `MM/DD HH:MM:SS`). Click any row to expand its raw JSON.
-- **JSON** — collapsible tree of the entire capture: depth-indented hierarchy, type-colored values, live filter with match count, hover-reveals the JS path (e.g. `pairs[7].response.body.usage.cache_read_input_tokens`), click to copy.
+- **JSON** — one stacked Request / Response section per pair with sticky labels and per-tree `Expand all` / `Collapse all` controls. Single filter input with a `Both | Request | Response` target toggle, depth-indented hierarchy, type-colored values, live match count. A persistent breadcrumb (e.g. `messages[0].content[1].text`) tracks the last hovered node and copies on click; each row gets a hover-revealed copy button (objects/arrays → pretty JSON, leaves → the raw value).
 
 The "Include single-message turns" toggle in the tab bar controls whether bootstrap/single-turn requests appear in the Transcript view (they're always present in Pairs and JSON).
 
@@ -209,15 +211,22 @@ src/
     ├── index.html
     ├── index.tsx             # entry: imports fonts + styles + App
     ├── styles.css            # dual-mode theme via [data-mode] CSS vars
-    ├── App.tsx               # masthead, tabs, error boundary, mode switch
+    ├── window.d.ts           # global Window augmentation (ccTraceData / ccTraceMeta)
+    ├── App.tsx               # masthead, stats block, version label, tabs, mode switch
     ├── components/
     │   ├── ConversationView.tsx  # three-column transcript + Exhibits
     │   ├── TokenMeter.tsx        # stacked cache/input/output bar
     │   ├── RawPairsView.tsx      # tabular pair list
-    │   └── JsonView.tsx          # collapsible/filterable JSON tree
+    │   ├── JsonView.tsx          # per-pair Request/Response trees + breadcrumb + copy
+    │   ├── StatsBlock.tsx        # turns + requests + six token totals
+    │   └── VersionLabel.tsx      # version · iso-timestamp in masthead
     └── hooks/
-        └── useWebSocket.ts       # null-safe live stream hook
+        ├── useWebSocket.ts       # null-safe live stream hook
+        ├── useWsReconnects.ts    # sibling counter consumed by VersionLabel
+        └── useThrottledStats.ts  # throttled SessionStats derivation (live mode)
 ```
+
+Pure shared modules consumed by both backend and the Vite-bundled frontend live under `src/shared/`: `types.ts`, `conversation.ts` (SSE assembly + grouping), `stats.ts` (`computeStats` + `formatNumber`), `throttle.ts` (pure scheduler for the live stats throttle), and `json-path.ts` (`formatForClipboard` + `formatJsonPath`).
 
 ### Theming
 

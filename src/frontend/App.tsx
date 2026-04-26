@@ -3,6 +3,8 @@ import type { HttpPair } from "../shared/types.js";
 import { ConversationView } from "./components/ConversationView.js";
 import { JsonView } from "./components/JsonView.js";
 import { RawPairsView } from "./components/RawPairsView.js";
+import { StatsBlock } from "./components/StatsBlock.js";
+import { VersionLabel } from "./components/VersionLabel.js";
 import { useWebSocket } from "./hooks/useWebSocket.js";
 
 type View = "conversations" | "raw" | "json";
@@ -34,9 +36,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, Error
 
 // For static HTML report, data is injected at build time
 const STATIC_DATA: HttpPair[] | null =
-  typeof window !== "undefined" && (window as unknown as { ccTraceData?: HttpPair[] }).ccTraceData
-    ? (window as unknown as { ccTraceData: HttpPair[] }).ccTraceData
-    : null;
+  typeof window !== "undefined" && window.ccTraceData ? window.ccTraceData : null;
 
 const IS_LIVE = STATIC_DATA === null;
 
@@ -80,8 +80,11 @@ export function App() {
               {errorCount} error{errorCount === 1 ? "" : "s"}
             </span>
           )}
+          <VersionLabel />
         </div>
       </header>
+
+      <StatsBlock pairs={pairs} live={IS_LIVE} />
 
       <nav className="tabs" role="tablist">
         {tabs.map((tab) => (
