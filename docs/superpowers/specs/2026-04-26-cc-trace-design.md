@@ -18,7 +18,7 @@
 | Frontend tech | React |
 | Test strategy | Unit (100% coverage) + Integration + E2E |
 | Log storage | `.cc-trace/` in CWD by default; `--output-dir` flag for custom location |
-| CLI style | Explicit subcommands (`cc-trace attach`, `cc-trace report`, `cc-trace index`) |
+| CLI style | Explicit subcommands (`cc-trace attach`, `cc-trace report`) |
 | Proxy architecture | Single-process (proxy + live server + claude in one Node process) |
 
 ---
@@ -74,8 +74,7 @@ cc-trace/
 │   │   ├── index.ts               # Entry point, subcommand router
 │   │   ├── commands/
 │   │   │   ├── attach.ts          # cc-trace attach
-│   │   │   ├── report.ts          # cc-trace report <file.jsonl>
-│   │   │   └── index-cmd.ts       # cc-trace index (AI summaries)
+│   │   │   └── report.ts          # cc-trace report <file.jsonl>
 │   │   └── options.ts             # Shared CLI option types
 │   ├── proxy/
 │   │   ├── server.ts              # MITM proxy (HTTP CONNECT handler)
@@ -88,8 +87,7 @@ cc-trace/
 │   │   ├── server.ts              # Express + WebSocket server
 │   │   └── broadcaster.ts         # Push new pairs to all WS clients
 │   ├── report/
-│   │   ├── html-generator.ts      # Self-contained HTML from JSONL
-│   │   └── index-generator.ts     # AI-powered session summaries
+│   │   └── html-generator.ts      # Self-contained HTML from JSONL
 │   ├── shared/
 │   │   ├── types.ts               # HttpPair, Session, Config types
 │   │   └── conversation.ts        # SSE parsing, streaming assembly, tool call extraction
@@ -272,10 +270,6 @@ cc-trace attach --claude-path /usr/local/bin/claude
 # Generate HTML from existing JSONL
 cc-trace report session.jsonl
 cc-trace report session.jsonl --output report.html
-
-# Generate AI-powered index of all sessions
-cc-trace index
-cc-trace index --output-dir ~/traces
 ```
 
 ---

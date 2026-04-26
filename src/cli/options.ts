@@ -1,7 +1,18 @@
 import { Command } from "commander";
 
+/**
+ * Thrown by parseArgs when Commander has already printed --help or --version
+ * output. The caller should exit 0 — there is no command to run.
+ */
+export class CliHelpDisplayed extends Error {
+  constructor() {
+    super("help displayed");
+    this.name = "CliHelpDisplayed";
+  }
+}
+
 export interface ParsedArgs {
-  command: "attach" | "report" | "index";
+  command: "attach" | "report";
   outputDir?: string;
   outputName?: string;
   livePort: number;
@@ -33,7 +44,10 @@ function extractRunWith(argv: string[]): [string[], string[]] {
  * @returns ParsedArgs with resolved command and options
  */
 export function parseArgs(argv: string[]): ParsedArgs {
-  const [filteredArgv, runWithArgs] = extractRunWith(argv);
+  // Treat bare `cc-trace` as `cc-trace attach` — attach is the primary use
+  // case. Without this, Commander would print --help and exit.
+  const normalized = argv.length === 0 ? ["attach"] : argv;
+  const [filteredArgv, runWithArgs] = extractRunWith(normalized);
 
   let result: ParsedArgs = {
     command: "attach",
@@ -88,24 +102,20 @@ export function parseArgs(argv: string[]): ParsedArgs {
       };
     });
 
-  program
-    .command("index")
-    .option("--output-dir <dir>", "directory to scan for .jsonl files")
-    .action((opts: { outputDir?: string }) => {
-      result = {
-        command: "index",
-        livePort: 3000,
-        includeAllRequests: false,
-        openBrowser: false,
-        claudeArgs: [],
-        ...(opts.outputDir !== undefined && { outputDir: opts.outputDir }),
-      };
-    });
-
   try {
     program.parse(["node", "cc-trace", ...filteredArgv]);
-  } catch {
-    // Commander throws on --help or unknown commands; return defaults
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    // --help / --version: Commander has already printed output to stdout.
+    // Signal the caller via a sentinel so it can exit 0 without running a
+    // command. (Returning defaults here would silently fall through to attach.)
+    const helpCodes = new Set(["commander.helpDisplayed", "commander.help", "commander.version"]);
+    if (code !== undefined && helpCodes.has(code)) {
+      throw new CliHelpDisplayed();
+    }
+    // Real input errors (unknown command/flag, missing arg) propagate so the
+    // CLI entry exits non-zero with Commander's already-printed message.
+    throw err;
   }
 
   return result;

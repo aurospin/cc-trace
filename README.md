@@ -89,20 +89,6 @@ Generates a self-contained HTML file from an existing JSONL log.
 |------|---------|-------------|
 | `--output <path>` | Same name as input, `.html` | Output HTML path |
 
-### `cc-trace index` — list captured sessions
-
-```bash
-cc-trace index
-```
-
-Lists `.jsonl` session files found in the output directory.
-
-**Options:**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--output-dir <dir>` | `.cc-trace/` | Directory to scan |
-
 ## The UI
 
 cc-trace ships a single React app served in two modes — the same component tree, themed via a `data-mode` attribute on `<html>`.
@@ -186,8 +172,7 @@ src/
 │   ├── options.ts            # CLI parsing (Commander)
 │   └── commands/
 │       ├── attach.ts         # proxy + Claude orchestration
-│       ├── report.ts         # JSONL → HTML
-│       └── index-cmd.ts      # session listing
+│       └── report.ts         # JSONL → HTML
 ├── proxy/
 │   ├── server.ts             # HTTP CONNECT MITM server
 │   ├── cert-manager.ts       # CA + per-domain cert generation

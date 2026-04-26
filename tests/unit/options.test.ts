@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseArgs } from "../../src/cli/options.js";
+import { CliHelpDisplayed, parseArgs } from "../../src/cli/options.js";
 
 describe("parseArgs — defaults (no args)", () => {
   it("empty argv falls back to attach defaults", () => {
@@ -48,10 +48,8 @@ describe("parseArgs — attach: --output-dir", () => {
     expect(result.outputDir).toBeUndefined();
   });
 
-  it("negative: --output-dir without a value throws in Commander → defaults returned", () => {
-    const result = parseArgs(["attach", "--output-dir"]);
-    expect(result.outputDir).toBeUndefined();
-    expect(result.command).toBe("attach");
+  it("negative: --output-dir without a value throws so the CLI can exit non-zero", () => {
+    expect(() => parseArgs(["attach", "--output-dir"])).toThrow();
   });
 });
 
@@ -81,9 +79,8 @@ describe("parseArgs — attach: --port", () => {
     expect(Number.isNaN(result.livePort)).toBe(true);
   });
 
-  it("negative: --port without value throws in Commander → defaults returned", () => {
-    const result = parseArgs(["attach", "--port"]);
-    expect(result.livePort).toBe(3000);
+  it("negative: --port without value throws so the CLI can exit non-zero", () => {
+    expect(() => parseArgs(["attach", "--port"])).toThrow();
   });
 });
 
@@ -127,9 +124,8 @@ describe("parseArgs — attach: --claude-path", () => {
     expect(result.claudePath).toBeUndefined();
   });
 
-  it("negative: --claude-path without value throws in Commander → defaults returned", () => {
-    const result = parseArgs(["attach", "--claude-path"]);
-    expect(result.claudePath).toBeUndefined();
+  it("negative: --claude-path without value throws so the CLI can exit non-zero", () => {
+    expect(() => parseArgs(["attach", "--claude-path"])).toThrow();
   });
 });
 
@@ -209,62 +205,30 @@ describe("parseArgs — report subcommand", () => {
     expect(result.openBrowser).toBe(false);
   });
 
-  it("negative: report without jsonlPath fails parsing → defaults (command=attach)", () => {
-    const result = parseArgs(["report"]);
-    expect(result.command).toBe("attach");
-    expect(result.jsonlPath).toBeUndefined();
+  it("negative: report without jsonlPath throws (missing required argument)", () => {
+    expect(() => parseArgs(["report"])).toThrow();
   });
 
-  it("negative: report --output without value throws → defaults", () => {
-    const result = parseArgs(["report", "session.jsonl", "--output"]);
-    expect(result.reportOutput).toBeUndefined();
-  });
-});
-
-describe("parseArgs — index subcommand", () => {
-  it("positive: index sets command=index", () => {
-    const result = parseArgs(["index"]);
-    expect(result.command).toBe("index");
-    expect(result.outputDir).toBeUndefined();
-  });
-
-  it("positive: index --output-dir sets outputDir", () => {
-    const result = parseArgs(["index", "--output-dir", "/tmp/traces"]);
-    expect(result.command).toBe("index");
-    expect(result.outputDir).toBe("/tmp/traces");
-  });
-
-  it("positive: index has openBrowser=false (different from attach)", () => {
-    const result = parseArgs(["index"]);
-    expect(result.openBrowser).toBe(false);
-  });
-
-  it("negative: index --output-dir without value throws → defaults", () => {
-    const result = parseArgs(["index", "--output-dir"]);
-    expect(result.command).toBe("attach");
+  it("negative: report --output without value throws (missing flag value)", () => {
+    expect(() => parseArgs(["report", "session.jsonl", "--output"])).toThrow();
   });
 });
 
 describe("parseArgs — error paths and edge cases", () => {
-  it("negative: --help triggers Commander throw → defaults returned", () => {
-    const result = parseArgs(["--help"]);
-    expect(result.command).toBe("attach");
+  it("positive: --help throws CliHelpDisplayed sentinel so the caller exits 0 without running a command", () => {
+    expect(() => parseArgs(["--help"])).toThrow(CliHelpDisplayed);
   });
 
-  it("negative: unknown command throws → defaults returned", () => {
-    const result = parseArgs(["frobnicate"]);
-    expect(result.command).toBe("attach");
+  it("negative: unknown command throws so the CLI can exit non-zero", () => {
+    expect(() => parseArgs(["frobnicate"])).toThrow();
   });
 
-  it("negative: unknown flag on attach throws → defaults returned", () => {
-    const result = parseArgs(["attach", "--unknown-flag"]);
-    expect(result.command).toBe("attach");
-    expect(result.outputDir).toBeUndefined();
+  it("negative: unknown flag on attach throws so the CLI can exit non-zero", () => {
+    expect(() => parseArgs(["attach", "--unknown-flag"])).toThrow();
   });
 
-  it("negative: option from a different subcommand is rejected", () => {
+  it("negative: option from a different subcommand throws (cross-command flag)", () => {
     // --output is a `report` flag, not an `attach` flag
-    const result = parseArgs(["attach", "--output", "x.html"]);
-    expect(result.reportOutput).toBeUndefined();
+    expect(() => parseArgs(["attach", "--output", "x.html"])).toThrow();
   });
 });
