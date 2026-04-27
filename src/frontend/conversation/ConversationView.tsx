@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { isContentBody } from "../../shared/guards.js";
 import { labelWidthForPairs } from "../../shared/pair-index.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
-import { exhibitLabel } from "./ExhibitList.js";
+import { toolCallLabel } from "./ToolCallList.js";
 import { TurnRow, formatDate, formatTime } from "./TurnRow.js";
 import { assembleStreaming, parseHttpPairs } from "./conversation.js";
 
@@ -24,13 +24,13 @@ export function ConversationView({ pairs, includeAll }: Props) {
   // Single global map across ALL captured pairs. Resolves tool_result labels
   // even when the originating tool_use is in a different conversation group
   // (system prompt changed between turns, which Claude Code does frequently).
-  const globalExhibitMap = useMemo(() => {
+  const toolUseLabels = useMemo(() => {
     const map = new Map<string, string>();
     let counter = 0;
     for (const pair of pairs) {
       for (const b of getAssistantBlocks(pair)) {
         if (b.type === "tool_use" && !map.has(b.id)) {
-          map.set(b.id, exhibitLabel(counter++));
+          map.set(b.id, toolCallLabel(counter++));
         }
       }
     }
@@ -75,14 +75,14 @@ export function ConversationView({ pairs, includeAll }: Props) {
         const isCollapsed = collapsed.has(conv.id);
 
         // Sidebar cards indexed by turnIdx for O(1) lookup at render time.
-        const exhibitsByTurnMap = new Map<number, { block: ToolUseBlock; label: string }[]>();
+        const toolCallsByTurn = new Map<number, { block: ToolUseBlock; label: string }[]>();
         conv.pairs.forEach((pair, turnIdx) => {
           for (const b of getAssistantBlocks(pair)) {
             if (b.type === "tool_use") {
-              const label = globalExhibitMap.get(b.id) ?? exhibitLabel(globalExhibitMap.size);
-              const entry = exhibitsByTurnMap.get(turnIdx) ?? [];
+              const label = toolUseLabels.get(b.id) ?? toolCallLabel(toolUseLabels.size);
+              const entry = toolCallsByTurn.get(turnIdx) ?? [];
               entry.push({ block: b, label });
-              exhibitsByTurnMap.set(turnIdx, entry);
+              toolCallsByTurn.set(turnIdx, entry);
             }
           }
         });
@@ -112,7 +112,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
                 const isFolded = foldedTurns.has(turnKey);
                 const isFresh =
                   pair.logged_at === lastPairLoggedAt && turnIdx === conv.pairs.length - 1;
-                const turnExhibits = exhibitsByTurnMap.get(turnIdx) ?? [];
+                const turnToolCalls = toolCallsByTurn.get(turnIdx) ?? [];
 
                 return (
                   <TurnRow
@@ -121,8 +121,8 @@ export function ConversationView({ pairs, includeAll }: Props) {
                     pairIndex={pair.pairIndex ?? turnIdx + 1}
                     labelWidth={labelWidth}
                     assistantBlocks={getAssistantBlocks(pair)}
-                    turnExhibits={turnExhibits}
-                    exhibitMap={globalExhibitMap}
+                    turnToolCalls={turnToolCalls}
+                    toolUseLabels={toolUseLabels}
                     isFolded={isFolded}
                     isFresh={isFresh}
                     onToggleFold={() => toggleTurn(turnKey)}

@@ -1,8 +1,8 @@
 import type React from "react";
 import { formatPairLabel } from "../../shared/pair-index.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
-import { ExhibitList } from "./ExhibitList.js";
 import { TokenMeter } from "./TokenMeter.js";
+import { ToolCallList } from "./ToolCallList.js";
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -30,7 +30,7 @@ function getLastUserMessage(pair: HttpPair): { role: string; content: unknown } 
   return null;
 }
 
-function renderUserContent(content: unknown, exhibits: Map<string, string>): React.ReactNode {
+function renderUserContent(content: unknown, toolUseLabels: Map<string, string>): React.ReactNode {
   if (typeof content === "string") return <p>{content}</p>;
   if (!Array.isArray(content)) return <p>{JSON.stringify(content)}</p>;
   return content.map((block, i) => {
@@ -47,11 +47,11 @@ function renderUserContent(content: unknown, exhibits: Map<string, string>): Rea
       return <p key={`b-${i}`}>{b.text}</p>;
     }
     if (b.type === "tool_result") {
-      const label = exhibits.get(b.tool_use_id ?? "") ?? "?";
+      const label = toolUseLabels.get(b.tool_use_id ?? "") ?? "?";
       const inner = typeof b.content === "string" ? b.content : JSON.stringify(b.content, null, 2);
       return (
         <div key={`b-${i}`} style={{ marginBottom: 10 }}>
-          <span className="exhibit-chip">tool_result {label}</span>
+          <span className="tool-chip">tool_result {label}</span>
           <pre
             style={{
               margin: "6px 0 0",
@@ -81,21 +81,21 @@ interface Props {
   pairIndex: number;
   labelWidth: number;
   assistantBlocks: ContentBlock[];
-  turnExhibits: { block: ToolUseBlock; label: string }[];
-  exhibitMap: Map<string, string>;
+  turnToolCalls: { block: ToolUseBlock; label: string }[];
+  toolUseLabels: Map<string, string>;
   isFolded: boolean;
   isFresh: boolean;
   onToggleFold: () => void;
 }
 
-/** Single transcript row: left rail (turn # + token meter), body, right exhibit margin. */
+/** Single transcript row: left rail (turn # + token meter), body, right tool call margin. */
 export function TurnRow({
   pair,
   pairIndex,
   labelWidth,
   assistantBlocks,
-  turnExhibits,
-  exhibitMap,
+  turnToolCalls,
+  toolUseLabels,
   isFolded,
   isFresh,
   onToggleFold,
@@ -130,7 +130,7 @@ export function TurnRow({
           {lastUser && (
             <div className="speaker user">
               <span className="role">User</span>
-              <div className="body">{renderUserContent(lastUser.content, exhibitMap)}</div>
+              <div className="body">{renderUserContent(lastUser.content, toolUseLabels)}</div>
             </div>
           )}
           <div className="speaker assistant">
@@ -149,9 +149,9 @@ export function TurnRow({
                     </p>
                   );
                 }
-                const label = exhibitMap.get(block.id) ?? "?";
+                const label = toolUseLabels.get(block.id) ?? "?";
                 return (
-                  <span key={`u-${i}`} className="exhibit-chip">
+                  <span key={`u-${i}`} className="tool-chip">
                     tool_use {label} — {block.name}
                   </span>
                 );
@@ -161,7 +161,7 @@ export function TurnRow({
         </div>
       )}
 
-      {!isFolded && <ExhibitList exhibits={turnExhibits} />}
+      {!isFolded && <ToolCallList toolCalls={turnToolCalls} />}
     </article>
   );
 }

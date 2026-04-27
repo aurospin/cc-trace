@@ -16,7 +16,7 @@
   --rule: #2a2520;
   --rule-soft: #c9bfac;
   --accent: #b53a2b; /* vermillion: errors, status_code !== 2xx */
-  --exhibit: #2f5e3e; /* forest: tool_use */
+  --tool-call: #2f5e3e; /* forest: tool_use */
   --cache-hit: #946f1a; /* ochre: cache_read_input_tokens */
   --cache-create: #3b6ea8; /* steel: cache_creation */
   --tok-input: #5a4f42; /* ink-mid: input tokens */
@@ -50,7 +50,7 @@
   --rule: #2a2620;
   --rule-soft: #3b362c;
   --accent: #ff7a3d; /* signal amber */
-  --exhibit: #6fcf97;
+  --tool-call: #6fcf97;
   --cache-hit: #f0c674;
   --cache-create: #7aa6d6;
   --tok-input: #b8a784;
@@ -562,7 +562,7 @@ body {
   background: var(--accent);
 }
 .speaker.tool::before {
-  background: var(--exhibit);
+  background: var(--tool-call);
 }
 
 .speaker .role {
@@ -578,7 +578,7 @@ body {
   color: var(--accent);
 }
 .speaker.tool .role {
-  color: var(--exhibit);
+  color: var(--tool-call);
 }
 
 .speaker .body {
@@ -591,64 +591,64 @@ body {
   margin: 0 0 10px;
 }
 
-/* exhibit chip — inline marker that hoists to the right margin */
-.exhibit-chip {
+/* tool chip — inline marker that hoists to the right margin */
+.tool-chip {
   display: inline-block;
   padding: 1px 8px;
   margin: 2px 4px 2px 0;
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--exhibit);
-  border: 1px solid var(--exhibit);
+  color: var(--tool-call);
+  border: 1px solid var(--tool-call);
   border-radius: 2px;
   cursor: pointer;
   background: transparent;
   font-family: "JetBrains Mono", monospace;
 }
 
-.exhibit-chip:hover {
-  background: var(--exhibit);
+.tool-chip:hover {
+  background: var(--tool-call);
   color: var(--paper);
 }
 
-/* exhibit margin column */
-.exhibit-card {
+/* tool call margin column */
+.tool-call-card {
   margin-bottom: 14px;
   padding-left: 12px;
   border-left: 1px solid var(--rule-soft);
 }
 
-.exhibit-card .label {
+.tool-call-card .label {
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--exhibit);
+  color: var(--tool-call);
   display: block;
   margin-bottom: 2px;
 }
 
-.exhibit-card .name {
+.tool-call-card .name {
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   color: var(--ink-deep);
   margin-bottom: 4px;
 }
 
-.exhibit-card details summary {
+.tool-call-card details summary {
   cursor: pointer;
   font-size: 11px;
   color: var(--ink-mid);
   list-style: none;
 }
-.exhibit-card details summary::-webkit-details-marker {
+.tool-call-card details summary::-webkit-details-marker {
   display: none;
 }
-.exhibit-card details[open] summary {
+.tool-call-card details[open] summary {
   color: var(--accent);
 }
 
-.exhibit-card pre {
+.tool-call-card pre {
   margin: 6px 0 0;
   padding: 8px;
   background: var(--paper-edge);
