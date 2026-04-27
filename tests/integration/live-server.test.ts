@@ -183,6 +183,66 @@ describe("live server", () => {
     expect(pendingMsg.data.pairIndex).toBe(pairMsg.data.pairIndex);
   });
 
+  it("send() with no pairIndex falls back gracefully (removes -1 key from pendingMap)", async () => {
+    const received = await new Promise<{ type: string; data: HttpPair }>((resolve, reject) => {
+      const ws = new WebSocket(`ws://localhost:${liveServer.port}`);
+      ws.on("message", (msg: Buffer) => {
+        const payload = JSON.parse(msg.toString()) as { type: string; data: HttpPair };
+        if (payload.type === "pair" && payload.data.request.url === "https://no-index.com") {
+          ws.close();
+          resolve(payload);
+        }
+      });
+      ws.on("open", () => {
+        const pairNoIndex: HttpPair = {
+          request: {
+            timestamp: 1,
+            method: "GET",
+            url: "https://no-index.com",
+            headers: {},
+            body: null,
+          },
+          response: { timestamp: 2, status_code: 200, headers: {}, body: null, body_raw: null },
+          logged_at: new Date().toISOString(),
+        };
+        broadcaster.send(pairNoIndex);
+      });
+      ws.on("error", reject);
+      setTimeout(() => reject(new Error("timeout")), 3000);
+    });
+
+    expect(received.type).toBe("pair");
+    expect(received.data.pairIndex).toBeUndefined();
+  });
+
+  it("sendAborted broadcasts pair with response: null and preserves status", async () => {
+    const received = await new Promise<{ type: string; data: HttpPair }>((resolve, reject) => {
+      const ws = new WebSocket(`ws://localhost:${liveServer.port}`);
+      ws.on("message", (msg: Buffer) => {
+        const payload = JSON.parse(msg.toString()) as { type: string; data: HttpPair };
+        if (payload.type === "pair" && payload.data.pairIndex === 99) {
+          ws.close();
+          resolve(payload);
+        }
+      });
+      ws.on("open", () => {
+        broadcaster.sendAborted({
+          pairIndex: 99,
+          request: { timestamp: 1, method: "POST", url: "https://a.com", headers: {}, body: null },
+          status: "aborted",
+          logged_at: new Date().toISOString(),
+        });
+      });
+      ws.on("error", reject);
+      setTimeout(() => reject(new Error("timeout")), 3000);
+    });
+
+    expect(received.type).toBe("pair");
+    expect(received.data.pairIndex).toBe(99);
+    expect(received.data.response).toBeNull();
+    expect(received.data.status).toBe("aborted");
+  });
+
   it("client connecting mid-session receives only completed pairs in history (no pending)", async () => {
     broadcaster.sendPending(makePending(30));
     broadcaster.send(makePair(31));

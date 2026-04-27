@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const TEST_DIR = path.join(os.tmpdir(), `cc-trace-proxy-test-${Date.now()}`);
 process.env.CC_TRACE_DIR = TEST_DIR;
 
-import { ensureCA } from "../../src/proxy/cert-manager.js";
+import { clearCertCache, ensureCA, getDomainCert } from "../../src/proxy/cert-manager.js";
 import { startProxy } from "../../src/proxy/server.js";
 import type { HttpPair } from "../../src/shared/types.js";
 
@@ -88,6 +88,25 @@ async function sendRequest(proxyPort: number, targetPort: number): Promise<void>
     req.end();
   });
 }
+
+describe("ensureCA", () => {
+  it("reads existing CA from disk on second call (no regeneration)", () => {
+    const first = ensureCA();
+    const second = ensureCA();
+    expect(second.cert).toBe(first.cert);
+    expect(second.key).toBe(first.key);
+    expect(second.certPath).toBe(first.certPath);
+    expect(second.keyPath).toBe(first.keyPath);
+  });
+
+  it("clearCertCache forces new domain cert generation on next getDomainCert call", () => {
+    const ca = ensureCA();
+    const first = getDomainCert("test-clear.local", ca);
+    clearCertCache();
+    const second = getDomainCert("test-clear.local", ca);
+    expect(second.cert).not.toBe(first.cert);
+  });
+});
 
 describe("proxy server", () => {
   it("intercepts HTTPS CONNECT and emits an HttpPair", async () => {
