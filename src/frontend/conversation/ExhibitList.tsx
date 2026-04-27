@@ -1,12 +1,9 @@
 import type React from "react";
 import type { ToolUseBlock } from "../../shared/types.js";
 
-const EXHIBIT_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-/** Map a 0-based exhibit index to a human label (A, B, …, Z, AA, AB, …). */
+/** Map a 0-based call index to a 1-based numeric label (#1, #2, …). */
 export function exhibitLabel(i: number): string {
-  if (i < 26) return EXHIBIT_LABELS[i] ?? `${i}`;
-  return `${EXHIBIT_LABELS[Math.floor(i / 26) - 1] ?? ""}${EXHIBIT_LABELS[i % 26] ?? ""}`;
+  return `#${i + 1}`;
 }
 
 interface Props {
@@ -23,7 +20,7 @@ export function ExhibitList({ exhibits }: Props): React.ReactElement {
       {exhibits.length === 0 && <span style={{ color: "var(--ink-soft)" }}>—</span>}
       {exhibits.map(({ block, label }) => (
         <div key={block.id} className="exhibit-card">
-          <span className="label">Exhibit {label}</span>
+          <span className="label">tool_use {label}</span>
           <div className="name">{block.name}</div>
           <details>
             <summary>input</summary>

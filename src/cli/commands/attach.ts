@@ -58,13 +58,16 @@ export async function runAttach(args: ParsedArgs): Promise<void> {
 
   const writer = createWriter(session.jsonlPath);
 
+  proxy.emitter.on("pair-pending", (pending) => {
+    broadcaster.sendPending(pending);
+  });
+
   proxy.emitter.on("pair", (pair) => {
     const messageCount = isMessagesBody(pair.request.body) ? pair.request.body.messages.length : 0;
     const isMessages = pair.request.url.includes("/v1/messages");
     const shouldLog = !args.conversationsOnly || (isMessages && messageCount >= 1);
     if (shouldLog) {
       writer.write(pair);
-      broadcaster.send(pair);
       process.stdout.write(
         `  [captured] ${pair.request.method} ${pair.request.url} (${messageCount} messages)\n`,
       );
@@ -73,6 +76,15 @@ export async function runAttach(args: ParsedArgs): Promise<void> {
         `  [skipped]  ${pair.request.method} ${pair.request.url} (${messageCount} messages)\n`,
       );
     }
+    broadcaster.send(pair);
+  });
+
+  proxy.emitter.on("pair-aborted", (record) => {
+    writer.writeAborted(record);
+    broadcaster.sendAborted(record);
+    process.stdout.write(
+      `  [aborted]  ${record.request.method} ${record.request.url} (pairIndex ${record.pairIndex})\n`,
+    );
   });
 
   const claudePath = findClaudePath(args.claudePath);

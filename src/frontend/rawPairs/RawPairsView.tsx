@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { padWidth as calcPadWidth, formatPairLabel } from "../../shared/pair-index.js";
 import type { HttpPair } from "../../shared/types.js";
 
 interface Props {
   pairs: HttpPair[];
+  pendingIndices?: Set<number>;
 }
 
 function shortenUrl(url: string): string {
@@ -27,26 +29,35 @@ function formatLoggedAt(loggedAt: string): string {
   return mm && dd ? `${mm}/${dd} ${time}` : time;
 }
 
-export function RawPairsView({ pairs }: Props) {
+export function RawPairsView({ pairs, pendingIndices = new Set() }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   if (pairs.length === 0) {
     return <div className="transcript-empty">No requests captured yet.</div>;
   }
 
+  const highestIndex = Math.max(1, ...pairs.map((p) => p.pairIndex ?? 1));
+  const labelWidth = calcPadWidth(highestIndex);
+
   return (
     <div className="raw-list">
       {pairs.map((pair, i) => {
+        const idx = pair.pairIndex ?? i + 1;
+        const isPending = pendingIndices.has(idx);
         const status = pair.response?.status_code ?? 0;
         const cls = status >= 400 ? "err" : "ok";
         return (
-          <div key={pair.logged_at}>
+          <div
+            key={pair.logged_at}
+            style={isPending ? { backgroundColor: "var(--pair-row-pending-bg)" } : undefined}
+          >
             <button
               type="button"
               className="raw-row"
               onClick={() => setExpanded(expanded === i ? null : i)}
             >
-              <span className={`status ${cls}`}>{status || "—"}</span>
+              <span className="pair-label">{formatPairLabel("Pair", idx, labelWidth)}</span>
+              <span className={`status ${cls}`}>{status || (isPending ? "…" : "—")}</span>
               <span className="method">{pair.request.method}</span>
               <span className="url">{shortenUrl(pair.request.url)}</span>
               <span className="time">{formatLoggedAt(pair.logged_at)}</span>

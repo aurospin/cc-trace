@@ -218,6 +218,106 @@ describe("computeStats", () => {
     expect(stats.requestsByMethod).toEqual({ POST: 0, GET: 0, PUT: 1 });
   });
 
+  it("US2-S-01: computeStats with includeAll:false counts only multi-message turns", () => {
+    const multiMsg = makePair({
+      request: {
+        body: {
+          model: "m1",
+          system: "s1",
+          messages: [
+            { role: "user", content: "a" },
+            { role: "assistant", content: "b" },
+            { role: "user", content: "c" },
+          ],
+        },
+      },
+      response: jsonResponse({ usage: { input_tokens: 1 } }),
+    });
+    const singleMsg = makePair({
+      request: {
+        body: { model: "m1", system: "s1", messages: [{ role: "user", content: "warmup" }] },
+      },
+      response: jsonResponse({ usage: { input_tokens: 1 } }),
+    });
+    const stats = computeStats([singleMsg, multiMsg], { includeAll: false });
+    expect(stats.turnCount).toBe(1);
+  });
+
+  it("US2-S-02: computeStats with includeAll:true counts all turns", () => {
+    const multiMsg = makePair({
+      request: {
+        body: {
+          model: "m1",
+          system: "s1",
+          messages: [
+            { role: "user", content: "a" },
+            { role: "assistant", content: "b" },
+            { role: "user", content: "c" },
+          ],
+        },
+      },
+      response: jsonResponse({ usage: { input_tokens: 1 } }),
+    });
+    const singleMsg = makePair({
+      request: {
+        body: { model: "m1", system: "s1", messages: [{ role: "user", content: "warmup" }] },
+      },
+      response: jsonResponse({ usage: { input_tokens: 1 } }),
+    });
+    const stats = computeStats([singleMsg, multiMsg], { includeAll: true });
+    expect(stats.turnCount).toBe(2);
+  });
+
+  it("US2-S-03: computeStats with no opts defaults to includeAll:true", () => {
+    const singleMsg = makePair({
+      request: {
+        body: { model: "m1", system: "s1", messages: [{ role: "user", content: "warmup" }] },
+      },
+      response: jsonResponse({ usage: { input_tokens: 1 } }),
+    });
+    const stats = computeStats([singleMsg]);
+    expect(stats.turnCount).toBe(1);
+  });
+
+  it("US2-S-04: 10 pairs with 3 single-message warm-ups: filter OFF=7, ON=10", () => {
+    const makeMulti = () =>
+      makePair({
+        request: {
+          body: {
+            model: "m1",
+            system: "s1",
+            messages: [
+              { role: "user", content: "q" },
+              { role: "assistant", content: "a" },
+              { role: "user", content: "q2" },
+            ],
+          },
+        },
+        response: jsonResponse({ usage: { input_tokens: 1 } }),
+      });
+    const makeSingle = () =>
+      makePair({
+        request: {
+          body: { model: "m1", system: "s1", messages: [{ role: "user", content: "warmup" }] },
+        },
+        response: jsonResponse({ usage: { input_tokens: 1 } }),
+      });
+    const pairs = [
+      makeSingle(),
+      makeMulti(),
+      makeMulti(),
+      makeSingle(),
+      makeMulti(),
+      makeMulti(),
+      makeMulti(),
+      makeSingle(),
+      makeMulti(),
+      makeMulti(),
+    ];
+    expect(computeStats(pairs, { includeAll: false }).turnCount).toBe(7);
+    expect(computeStats(pairs, { includeAll: true }).turnCount).toBe(10);
+  });
+
   it("C-S-11: turnCount sums pairs across conversations via parseHttpPairs(includeAll)", () => {
     const pairs = [
       makePair({

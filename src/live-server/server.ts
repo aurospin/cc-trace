@@ -39,7 +39,7 @@ export function startLiveServer(
   }
 
   app.get("/api/pairs", (_req, res) => {
-    res.json(broadcaster.getPairs());
+    res.json({ completed: broadcaster.getPairs(), pending: broadcaster.getPendingPairs() });
   });
 
   app.get("/api/status", (_req, res) => {

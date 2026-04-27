@@ -3,10 +3,13 @@ import {
   isAddressInfo,
   isContentBody,
   isErrorWithCode,
+  isHttpPair,
+  isHttpPairArray,
   isMessagesBody,
   isModelBody,
   isPackageJson,
   isPairWsFrame,
+  isPendingPair,
   isStatusMeta,
   isStreamContentBlock,
   isStreamContentBlockDelta,
@@ -246,5 +249,78 @@ describe("isStreamUsage", () => {
   it("rejects null and primitives", () => {
     expect(isStreamUsage(null)).toBe(false);
     expect(isStreamUsage(42)).toBe(false);
+  });
+});
+
+describe("isHttpPair", () => {
+  it("accepts valid pair shape", () => {
+    expect(
+      isHttpPair({
+        request: { method: "POST" },
+        response: { status_code: 200 },
+        logged_at: "2026-01-01T00:00:00Z",
+      }),
+    ).toBe(true);
+  });
+  it("accepts pair with null response", () => {
+    expect(
+      isHttpPair({ request: { method: "GET" }, response: null, logged_at: "2026-01-01T00:00:00Z" }),
+    ).toBe(true);
+  });
+  it("rejects missing logged_at", () => {
+    expect(isHttpPair({ request: {}, response: null })).toBe(false);
+  });
+  it("rejects missing request", () => {
+    expect(isHttpPair({ response: null, logged_at: "x" })).toBe(false);
+  });
+  it("rejects null and primitives", () => {
+    expect(isHttpPair(null)).toBe(false);
+    expect(isHttpPair("x")).toBe(false);
+  });
+});
+
+describe("isHttpPairArray", () => {
+  it("accepts empty array", () => {
+    expect(isHttpPairArray([])).toBe(true);
+  });
+  it("accepts array of valid pairs", () => {
+    expect(
+      isHttpPairArray([
+        { request: {}, response: null, logged_at: "x" },
+        { request: {}, response: {}, logged_at: "y" },
+      ]),
+    ).toBe(true);
+  });
+  it("rejects array with an invalid pair", () => {
+    expect(isHttpPairArray([{ request: {}, logged_at: "x" }, { notAPair: true }])).toBe(false);
+  });
+  it("rejects non-array", () => {
+    expect(isHttpPairArray(null)).toBe(false);
+    expect(isHttpPairArray({ length: 0 })).toBe(false);
+  });
+});
+
+describe("isPendingPair", () => {
+  it("accepts valid pending pair", () => {
+    expect(
+      isPendingPair({
+        pairIndex: 3,
+        request: { method: "POST" },
+        startedAt: "2026-01-01T00:00:00Z",
+      }),
+    ).toBe(true);
+  });
+  it("rejects missing pairIndex", () => {
+    expect(isPendingPair({ request: {}, startedAt: "x" })).toBe(false);
+  });
+  it("rejects non-number pairIndex", () => {
+    expect(isPendingPair({ pairIndex: "1", request: {}, startedAt: "x" })).toBe(false);
+  });
+  it("rejects missing startedAt", () => {
+    expect(isPendingPair({ pairIndex: 1, request: {} })).toBe(false);
+  });
+  it("rejects null and primitives", () => {
+    expect(isPendingPair(null)).toBe(false);
+    expect(isPendingPair(42)).toBe(false);
   });
 });

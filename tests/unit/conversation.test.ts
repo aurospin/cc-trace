@@ -98,7 +98,7 @@ describe("assembleStreaming", () => {
   });
 });
 
-const makePair = (model: string, system: string, msgs: number): HttpPair => ({
+const makePair = (model: string, system: string, msgs: number, idx?: number): HttpPair => ({
   request: {
     timestamp: Date.now() / 1000,
     method: "POST",
@@ -121,6 +121,7 @@ const makePair = (model: string, system: string, msgs: number): HttpPair => ({
     body_raw: null,
   },
   logged_at: new Date().toISOString(),
+  pairIndex: idx,
 });
 
 describe("parseHttpPairs", () => {
@@ -189,5 +190,43 @@ describe("parseHttpPairs", () => {
     const convos = parseHttpPairs([pair]);
     expect(convos).toHaveLength(1);
     expect(convos[0].pairs[0]).toBe(pair);
+  });
+
+  it("FR-003: Turn label is driven by pairIndex, not a render-time counter", () => {
+    // Three pairs with pairIndex 1, 3, 5 (gaps because warm-ups were filtered)
+    const pairs = [makePair("m", "s", 3, 1), makePair("m", "s", 3, 3), makePair("m", "s", 3, 5)];
+    const convos = parseHttpPairs(pairs, { includeAll: true });
+    expect(convos).toHaveLength(1);
+    const conv = convos[0];
+    expect(conv.pairs[0]?.pairIndex).toBe(1);
+    expect(conv.pairs[1]?.pairIndex).toBe(3);
+    expect(conv.pairs[2]?.pairIndex).toBe(5);
+  });
+
+  it("FR-005: toggling display filter does not change visible pair pairIndex values", () => {
+    const pairs = [
+      makePair("m", "s", 1, 1), // single-msg warm-up
+      makePair("m", "s", 3, 2),
+      makePair("m", "s", 1, 3), // single-msg warm-up
+      makePair("m", "s", 3, 4),
+    ];
+    const withAll = parseHttpPairs(pairs, { includeAll: true });
+    const withoutAll = parseHttpPairs(pairs, { includeAll: false });
+
+    const allIdx = withAll.flatMap((c) => c.pairs.map((p) => p.pairIndex));
+    const filteredIdx = withoutAll.flatMap((c) => c.pairs.map((p) => p.pairIndex));
+
+    expect(allIdx).toEqual([1, 2, 3, 4]);
+    expect(filteredIdx).toEqual([2, 4]);
+  });
+
+  it("FR-007: non-/v1/messages pair does not appear in Transcript output", () => {
+    const nonMsgPair = makePair("m", "s", 3, 2);
+    nonMsgPair.request.url = "https://api.anthropic.com/v1/count_tokens";
+    const msgPair = makePair("m", "s", 3, 1);
+    const convos = parseHttpPairs([msgPair, nonMsgPair], { includeAll: true });
+    const allPairIndexes = convos.flatMap((c) => c.pairs.map((p) => p.pairIndex));
+    expect(allPairIndexes).toContain(1);
+    expect(allPairIndexes).not.toContain(2);
   });
 });

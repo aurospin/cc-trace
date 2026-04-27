@@ -5,7 +5,7 @@ import { JsonView } from "./jsonView/JsonView.js";
 import { RawPairsView } from "./rawPairs/RawPairsView.js";
 import { StatsBlock } from "./stats/StatsBlock.js";
 import { VersionLabel } from "./versionLabel/VersionLabel.js";
-import { useWebSocket } from "./versionLabel/useWebSocket.js";
+import { useLivePairs } from "./versionLabel/useLivePairs.js";
 
 type View = "conversations" | "raw" | "json";
 
@@ -46,8 +46,10 @@ const WS_URL: string | null =
     : null;
 
 export function App() {
-  const livePairs = useWebSocket<HttpPair>(WS_URL);
-  const pairs = STATIC_DATA ?? livePairs;
+  const { pairs: livePairs, pendingIndices } = useLivePairs(WS_URL);
+  const pairs = (STATIC_DATA ?? livePairs)
+    .slice()
+    .sort((a, b) => (a.pairIndex ?? 0) - (b.pairIndex ?? 0));
   const [view, setView] = useState<View>("conversations");
   const [includeAll, setIncludeAll] = useState(true);
 
@@ -84,7 +86,7 @@ export function App() {
         </div>
       </header>
 
-      <StatsBlock pairs={pairs} live={IS_LIVE} />
+      <StatsBlock pairs={pairs} live={IS_LIVE} includeAll={includeAll} />
 
       <nav className="tabs" role="tablist">
         {tabs.map((tab) => (
@@ -112,8 +114,8 @@ export function App() {
 
       <ErrorBoundary>
         {view === "conversations" && <ConversationView pairs={pairs} includeAll={includeAll} />}
-        {view === "raw" && <RawPairsView pairs={pairs} />}
-        {view === "json" && <JsonView pairs={pairs} />}
+        {view === "raw" && <RawPairsView pairs={pairs} pendingIndices={pendingIndices} />}
+        {view === "json" && <JsonView pairs={pairs} pendingIndices={pendingIndices} />}
       </ErrorBoundary>
 
       <footer className="footer">

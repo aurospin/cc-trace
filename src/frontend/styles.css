@@ -35,6 +35,7 @@
   --copy-btn-fg: var(--ink-soft);
   --copy-btn-hover-bg: var(--paper-deep);
   --sticky-label-bg: var(--paper);
+  --pair-row-pending-bg: #fdf5e0;
 
   color-scheme: light;
 }
@@ -68,6 +69,7 @@
   --copy-btn-fg: var(--ink-mid);
   --copy-btn-hover-bg: var(--paper-deep);
   --sticky-label-bg: var(--paper);
+  --pair-row-pending-bg: #1e1a0e;
 
   color-scheme: dark;
 }

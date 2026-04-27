@@ -59,44 +59,101 @@ afterAll(async () => {
   fs.rmSync(TEST_DIR, { recursive: true, force: true });
 });
 
+async function sendRequest(proxyPort: number, targetPort: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      host: "127.0.0.1",
+      port: proxyPort,
+      method: "CONNECT",
+      path: `localhost:${targetPort}`,
+    });
+
+    req.on("connect", (_res, socket) => {
+      const tlsSocket = tls.connect({
+        socket,
+        servername: "localhost",
+        rejectUnauthorized: false,
+      });
+
+      tlsSocket.on("secureConnect", () => {
+        tlsSocket.write("GET /test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+      });
+
+      tlsSocket.on("data", () => {});
+      tlsSocket.on("end", () => resolve());
+      tlsSocket.on("error", reject);
+    });
+
+    req.on("error", reject);
+    req.end();
+  });
+}
+
 describe("proxy server", () => {
   it("intercepts HTTPS CONNECT and emits an HttpPair", async () => {
     const pairPromise = new Promise<HttpPair>((resolve) => {
       proxyInstance.emitter.once("pair", resolve);
     });
 
-    await new Promise<void>((resolve, reject) => {
-      const req = http.request({
-        host: "127.0.0.1",
-        port: proxyInstance.port,
-        method: "CONNECT",
-        path: `localhost:${targetPort}`,
-      });
-
-      req.on("connect", (_res, socket) => {
-        const tlsSocket = tls.connect({
-          socket,
-          servername: "localhost",
-          rejectUnauthorized: false,
-        });
-
-        tlsSocket.on("secureConnect", () => {
-          tlsSocket.write("GET /test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
-        });
-
-        tlsSocket.on("data", () => {});
-        tlsSocket.on("end", () => resolve());
-        tlsSocket.on("error", reject);
-      });
-
-      req.on("error", reject);
-      req.end();
-    });
+    await sendRequest(proxyInstance.port, targetPort);
 
     const pair = await pairPromise;
     expect(pair.request.method).toBe("GET");
     expect(pair.request.url).toContain("localhost");
     expect(pair.response?.status_code).toBe(200);
     expect(pair.response?.body).toMatchObject({ hello: "world" });
+  }, 10000);
+
+  it("pair-pending fires synchronously before forwardRequest resolves", async () => {
+    const pendingPromise = new Promise<{ pairIndex: number }>((resolve) => {
+      proxyInstance.emitter.once("pair-pending", resolve);
+    });
+    const pairPromise = new Promise<HttpPair>((resolve) => {
+      proxyInstance.emitter.once("pair", resolve);
+    });
+
+    const requestPromise = sendRequest(proxyInstance.port, targetPort);
+    const pending = await pendingPromise;
+
+    expect(typeof pending.pairIndex).toBe("number");
+    expect(pending.pairIndex).toBeGreaterThanOrEqual(1);
+
+    await requestPromise;
+    const pair = await pairPromise;
+    expect(pair.pairIndex).toBe(pending.pairIndex);
+  }, 10000);
+
+  it("pairIndex increments monotonically across multiple requests", async () => {
+    const indices: number[] = [];
+    const collect = (p: HttpPair) => indices.push(p.pairIndex ?? -1);
+    proxyInstance.emitter.on("pair", collect);
+
+    await sendRequest(proxyInstance.port, targetPort);
+    await sendRequest(proxyInstance.port, targetPort);
+    await sendRequest(proxyInstance.port, targetPort);
+
+    proxyInstance.emitter.off("pair", collect);
+
+    expect(indices).toHaveLength(3);
+    const [a, b, c] = indices;
+    if (a !== undefined && b !== undefined && c !== undefined) {
+      expect(b).toBeGreaterThan(a);
+      expect(c).toBeGreaterThan(b);
+    }
+  }, 15000);
+
+  it("pair event carries the same pairIndex as its preceding pair-pending", async () => {
+    const pendingIdx = await new Promise<number>((resolve) => {
+      proxyInstance.emitter.once("pair-pending", (p: { pairIndex: number }) => {
+        resolve(p.pairIndex);
+      });
+      sendRequest(proxyInstance.port, targetPort).catch(() => {});
+    });
+
+    const completedIdx = await new Promise<number>((resolve) => {
+      proxyInstance.emitter.once("pair", (p: HttpPair) => resolve(p.pairIndex ?? -1));
+    });
+
+    expect(completedIdx).toBe(pendingIdx);
   }, 10000);
 });

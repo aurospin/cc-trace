@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { createBroadcaster } from "../../src/live-server/broadcaster.js";
 import { startLiveServer } from "../../src/live-server/server.js";
-import type { HttpPair, Session } from "../../src/shared/types.js";
+import type { HttpPair, PendingPair, Session } from "../../src/shared/types.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const PKG_VERSION = JSON.parse(
@@ -21,10 +21,17 @@ const session: Session = {
   outputDir: "/tmp",
 };
 
-const makePair = (): HttpPair => ({
+const makePair = (pairIndex = 1): HttpPair => ({
   request: { timestamp: 1, method: "POST", url: "https://a.com", headers: {}, body: null },
   response: { timestamp: 2, status_code: 200, headers: {}, body: { ok: true }, body_raw: null },
   logged_at: new Date().toISOString(),
+  pairIndex,
+});
+
+const makePending = (pairIndex = 1): PendingPair => ({
+  pairIndex,
+  request: { timestamp: 1, method: "POST", url: "https://a.com", headers: {}, body: null },
+  startedAt: new Date().toISOString(),
 });
 
 let liveServer: { port: number; close(): Promise<void> };
@@ -40,12 +47,14 @@ afterAll(async () => {
 });
 
 describe("live server", () => {
-  it("GET /api/pairs returns empty array initially", async () => {
+  it("GET /api/pairs returns completed and pending arrays initially", async () => {
     const res = await fetch(`http://localhost:${liveServer.port}/api/pairs`);
     expect(res.ok).toBe(true);
-    const data = await res.json();
-    expect(Array.isArray(data)).toBe(true);
-    expect(data).toHaveLength(0);
+    const data = (await res.json()) as { completed: unknown[]; pending: unknown[] };
+    expect(Array.isArray(data.completed)).toBe(true);
+    expect(Array.isArray(data.pending)).toBe(true);
+    expect(data.completed).toHaveLength(0);
+    expect(data.pending).toHaveLength(0);
   });
 
   it("GET /api/status returns session metadata", async () => {
@@ -98,5 +107,101 @@ describe("live server", () => {
     });
 
     expect((received as { type: string }).type).toBe("pair");
+  });
+
+  it("WS client receives pair-pending before pair for the same pairIndex", async () => {
+    const messages: Array<{ type: string; data: { pairIndex?: number } }> = [];
+
+    await new Promise<void>((resolve, reject) => {
+      const ws = new WebSocket(`ws://localhost:${liveServer.port}`);
+      ws.on("message", (msg: Buffer) => {
+        const payload = JSON.parse(msg.toString()) as {
+          type: string;
+          data: { pairIndex?: number };
+        };
+        if (payload.type === "pair-pending" || payload.type === "pair") {
+          messages.push(payload);
+          if (messages.length === 2) {
+            ws.close();
+            resolve();
+          }
+        }
+      });
+      ws.on("open", () => {
+        broadcaster.sendPending(makePending(10));
+        broadcaster.send(makePair(10));
+      });
+      ws.on("error", reject);
+      setTimeout(() => reject(new Error("timeout")), 3000);
+    });
+
+    expect(messages[0]?.type).toBe("pair-pending");
+    expect(messages[0]?.data.pairIndex).toBe(10);
+    expect(messages[1]?.type).toBe("pair");
+    expect(messages[1]?.data.pairIndex).toBe(10);
+  });
+
+  it("pending row hydrates in place (same pairIndex in both messages)", async () => {
+    const pendingMsg = await new Promise<{ type: string; data: { pairIndex?: number } }>(
+      (resolve, reject) => {
+        const ws = new WebSocket(`ws://localhost:${liveServer.port}`);
+        ws.on("message", (msg: Buffer) => {
+          const payload = JSON.parse(msg.toString()) as {
+            type: string;
+            data: { pairIndex?: number };
+          };
+          if (payload.type === "pair-pending") {
+            ws.close();
+            resolve(payload);
+          }
+        });
+        ws.on("open", () => broadcaster.sendPending(makePending(20)));
+        ws.on("error", reject);
+        setTimeout(() => reject(new Error("timeout")), 3000);
+      },
+    );
+
+    const pairMsg = await new Promise<{ type: string; data: { pairIndex?: number } }>(
+      (resolve, reject) => {
+        const ws = new WebSocket(`ws://localhost:${liveServer.port}`);
+        ws.on("message", (msg: Buffer) => {
+          const payload = JSON.parse(msg.toString()) as {
+            type: string;
+            data: { pairIndex?: number };
+          };
+          if (payload.type === "pair" && payload.data.pairIndex === 20) {
+            ws.close();
+            resolve(payload);
+          }
+        });
+        ws.on("open", () => broadcaster.send(makePair(20)));
+        ws.on("error", reject);
+        setTimeout(() => reject(new Error("timeout")), 3000);
+      },
+    );
+
+    expect(pendingMsg.data.pairIndex).toBe(pairMsg.data.pairIndex);
+  });
+
+  it("client connecting mid-session receives only completed pairs in history (no pending)", async () => {
+    broadcaster.sendPending(makePending(30));
+    broadcaster.send(makePair(31));
+
+    const history = await new Promise<HttpPair[]>((resolve, reject) => {
+      const ws = new WebSocket(`ws://localhost:${liveServer.port}`);
+      ws.on("message", (msg: Buffer) => {
+        const payload = JSON.parse(msg.toString()) as { type: string; data: HttpPair[] };
+        if (payload.type === "history") {
+          ws.close();
+          resolve(payload.data);
+        }
+      });
+      ws.on("error", reject);
+      setTimeout(() => reject(new Error("timeout")), 3000);
+    });
+
+    const indices = history.map((p) => p.pairIndex);
+    expect(indices).not.toContain(30);
+    expect(indices).toContain(31);
   });
 });

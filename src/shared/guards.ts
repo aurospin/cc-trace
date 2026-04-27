@@ -90,3 +90,28 @@ export function isStreamUsage(x: unknown): x is { output_tokens?: number } {
   if ("output_tokens" in x && typeof x.output_tokens !== "number") return false;
   return true;
 }
+
+/** Narrows an unknown value to an HttpPair shape (structural check). */
+export function isHttpPair(x: unknown): x is import("./types.js").HttpPair {
+  return (
+    isObject(x) &&
+    isObject(x.request) &&
+    typeof x.logged_at === "string" &&
+    (x.response === null || isObject(x.response))
+  );
+}
+
+/** Narrows an unknown value to an HttpPair array. */
+export function isHttpPairArray(x: unknown): x is import("./types.js").HttpPair[] {
+  return Array.isArray(x) && x.every(isHttpPair);
+}
+
+/** Narrows an unknown value to a PendingPair shape. */
+export function isPendingPair(x: unknown): x is import("./types.js").PendingPair {
+  return (
+    isObject(x) &&
+    typeof x.pairIndex === "number" &&
+    isObject(x.request) &&
+    typeof x.startedAt === "string"
+  );
+}

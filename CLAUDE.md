@@ -53,14 +53,15 @@ npx vitest run tests/unit/<file>.test.ts   # single test file
 | `shared/types.ts` | Cross-tier type declarations — Node-free, no runtime code |
 | `shared/version.ts` | Reads `package.json` once and exports `PKG_VERSION` literal — single source for live server + HTML report |
 | `shared/guards.ts` | `(x: unknown) => x is T` type guards used at every module boundary in lieu of inline `as { ... }` casts. Each guard has paired accept/reject unit tests |
+| `shared/pair-index.ts` | Pure helpers: `padWidth(highestIndex)` → min label width ≥ 2; `formatPairLabel(prefix, idx, width)` → `"Turn 03"` / `"Pair 042"` |
 | `cli/options.ts` | `parseArgs` throws `CliHelpDisplayed` for `--help`/`--version` (caller exits 0); rethrows all other Commander errors (caller exits 1). **Never collapse the catch into "return defaults"** — that silently runs `attach` on typos |
-| `frontend/styles.css` | Theming via CSS vars on `:root[data-mode="static"\|"live"]`. Components reference vars only — never literal colors |
+| `frontend/styles.css` | Theming via CSS vars on `:root[data-mode="static"\|"live"]` |
 | `frontend/App.tsx` | Sets `documentElement.dataset.mode` from `window.ccTraceData` presence |
 | `frontend/conversation/*` | `ConversationView` container + `TurnRow` + `ExhibitList` + `TokenMeter`. `conversation.ts` (pure): `parseHttpPairs` groups by system+model, `assembleStreaming` parses SSE → `AssembledMessage` |
 | `frontend/jsonView/*` | `JsonView` container + `JsonTree` + `JsonNode` (recursive renderer) + `JsonBreadcrumb` + `jsonViewReducer`. `json-path.ts` (pure): segment formatting + clipboard payload |
 | `frontend/stats/*` | `StatsBlock` + `useThrottledStats` hook. `stats.ts` + `throttle.ts` (pure): `computeStats`, `nextRecompute` scheduler |
 | `frontend/rawPairs/RawPairsView.tsx` | Tabular pair list |
-| `frontend/versionLabel/*` | `VersionLabel` + `useWebSocket` (no-op when `wsUrl === null`, e.g. `file://`) + `useWsReconnects` |
+| `frontend/versionLabel/*` | `VersionLabel` + `useWebSocket` (no-op on `file://`) + `useWsReconnects` + `useLivePairs` (WS pairs + in-flight `pendingIndices` via history/pair-pending/pair) |
 
 ### Two filters (easy to confuse)
 1. **Capture** (`attach.ts`): default keeps every request. `--conversations-only` restricts to `/v1/messages` with `messages.length >= 1`.
@@ -93,14 +94,14 @@ tests/e2e/          mock-claude.ts + mock-api.ts; full attach lifecycle
 ## Security
 
 - **Credential redaction**: `Authorization` and `x-api-key` truncated in `proxy/forwarder.ts` before any sink (verified by `forwarder.test.ts`).
-- **Untrusted-payload rendering**: HTML report embeds pairs as base64 → `atob()` → `JSON.parse()` in a single `<script>`. Never interpolate captured strings into HTML, attributes, or `eval`-equivalents — a captured `<script>` in tool input is stored XSS against any reader.
+- **Untrusted-payload rendering**: pairs embed as base64 → `atob()` → `JSON.parse()`. Never interpolate captured strings into HTML, attributes, or `eval`-equivalents — a captured `<script>` in tool input is stored XSS.
 - **CA custody**: `~/.cc-trace/ca.key` MUST be `0600` (enforced in `proxy/cert-manager.ts`). Compromise = host-wide TLS forgery; never embed in JSONL, reports, logs, or error messages.
 - **Dependency review**: new runtime dep → justify in spec, run `npm audit`, resolve High/Critical, audit install-scripts and ownership churn before merge.
 
 ### Repo & release hygiene
 
-- **Captures stay out of git**: `.gitignore` excludes `.cc-trace/`, `.env*`, `dist/`, `.claude/` — keep them so. Don't `git add -A` after running the proxy in-repo.
-- **Fixtures are synthetic**: any `tests/**/fixtures/*.jsonl` MUST be hand-built or redacted, never a verbatim capture.
+- **Captures stay out of git**: `.gitignore` covers `.cc-trace/`, `.env*`, `dist/`, `.claude/`. Never `git add -A` after running the proxy in-repo.
+- **Fixtures are synthetic**: `tests/**/fixtures/*.jsonl` must be hand-built or redacted — never a verbatim capture.
 - **npm publish surface**: `package.json` `"files"` is the allowlist (`dist`, `README.md`, `LICENSE`). Verify with `npm pack --dry-run` before every release — zero matches for `tests/`, `specs/`, `.specify/`, `CLAUDE.md`.
 - **Pre-publish sweep**: grep working tree for `sk-ant-…`, `Bearer …`, real customer names in `specs/`.
 - **Signed tags + scoped CI**: `git tag -s` for releases. Future GitHub Actions on fork PRs MUST use `pull_request` (no secrets), never `pull_request_target` with PR checkout.
@@ -112,5 +113,5 @@ tests/e2e/          mock-claude.ts + mock-api.ts; full attach lifecycle
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/002-structural-refactor/plan.md`
+`specs/003-tab-numbering-correlation/plan.md`
 <!-- SPECKIT END -->

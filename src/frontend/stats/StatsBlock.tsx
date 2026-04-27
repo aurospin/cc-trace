@@ -5,6 +5,7 @@ import { useThrottledStats } from "./useThrottledStats.js";
 interface Props {
   pairs: HttpPair[];
   live: boolean;
+  includeAll?: boolean;
 }
 
 interface PillProps {
@@ -23,8 +24,8 @@ function Pill({ label, value, title, className }: PillProps) {
   );
 }
 
-export function StatsBlock({ pairs, live }: Props) {
-  const stats = useThrottledStats(pairs, live);
+export function StatsBlock({ pairs, live, includeAll = true }: Props) {
+  const stats = useThrottledStats(pairs, live, 250, includeAll);
   const methods = Object.entries(stats.requestsByMethod)
     .filter(([m, n]) => m === "POST" || m === "GET" || n > 0)
     .sort(([a], [b]) => a.localeCompare(b));

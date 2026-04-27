@@ -22,16 +22,26 @@ const EMPTY_SNAPSHOT: SchedulerSnapshot = { pairCount: 0, lastSettled: true };
  * @param pairs - current pairs array
  * @param live - true for live dashboard (throttled), false for static report (synchronous)
  * @param windowMs - throttle window in ms (default 250)
+ * @param includeAll - when false, turnCount counts only multi-message conversation turns
  * @returns SessionStats
  */
-export function useThrottledStats(pairs: HttpPair[], live: boolean, windowMs = 250): SessionStats {
-  const staticStats = useMemo(() => computeStats(pairs), [pairs]);
-  const [liveStats, setLiveStats] = useState<SessionStats>(() => computeStats(pairs));
+export function useThrottledStats(
+  pairs: HttpPair[],
+  live: boolean,
+  windowMs = 250,
+  includeAll = true,
+): SessionStats {
+  const staticStats = useMemo(() => computeStats(pairs, { includeAll }), [pairs, includeAll]);
+  const [liveStats, setLiveStats] = useState<SessionStats>(() =>
+    computeStats(pairs, { includeAll }),
+  );
   const lastRecomputeMs = useRef<number>(0);
   const prevSnap = useRef<SchedulerSnapshot>(EMPTY_SNAPSHOT);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pairsRef = useRef<HttpPair[]>(pairs);
   pairsRef.current = pairs;
+  const includeAllRef = useRef<boolean>(includeAll);
+  includeAllRef.current = includeAll;
 
   useEffect(() => {
     if (!live) return;
@@ -51,14 +61,14 @@ export function useThrottledStats(pairs: HttpPair[], live: boolean, windowMs = 2
         timer.current = null;
       }
       lastRecomputeMs.current = Date.now();
-      setLiveStats(computeStats(pairsRef.current));
+      setLiveStats(computeStats(pairsRef.current, { includeAll: includeAllRef.current }));
     } else if (decision.scheduleAt !== null && timer.current === null) {
       const delay = Math.max(0, decision.scheduleAt - Date.now());
       timer.current = setTimeout(() => {
         timer.current = null;
         lastRecomputeMs.current = Date.now();
         prevSnap.current = snapshot(pairsRef.current);
-        setLiveStats(computeStats(pairsRef.current));
+        setLiveStats(computeStats(pairsRef.current, { includeAll: includeAllRef.current }));
       }, delay);
     }
 

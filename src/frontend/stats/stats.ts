@@ -91,9 +91,10 @@ function parseSseUsage(bodyRaw: string): UsageObj | null {
  * Computes session-wide aggregate counts and token totals.
  * Pure: same input always yields the same output. No I/O.
  * @param pairs - all captured pairs (any URL, any status; filtering is internal)
+ * @param opts - optional settings; `includeAll` controls Transcript filter (default true)
  * @returns SessionStats — see specs/001-stats-version-json-ui/data-model.md
  */
-export function computeStats(pairs: HttpPair[]): SessionStats {
+export function computeStats(pairs: HttpPair[], opts?: { includeAll?: boolean }): SessionStats {
   const tokens: SessionTokenTotals = {
     cacheRead: 0,
     cacheCreationInput: 0,
@@ -117,7 +118,7 @@ export function computeStats(pairs: HttpPair[]): SessionStats {
     if (u) accumulate(tokens, u);
   }
 
-  const conversations = parseHttpPairs(pairs, { includeAll: true });
+  const conversations = parseHttpPairs(pairs, { includeAll: opts?.includeAll ?? true });
   const turnCount = conversations.reduce((acc, conv) => acc + conv.pairs.length, 0);
 
   return {

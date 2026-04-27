@@ -21,6 +21,9 @@ export interface HttpResponse {
   body_raw: string | null;
 }
 
+/** Terminal status for a captured pair */
+export type PairStatus = "completed" | "aborted" | "timeout";
+
 /** One captured request/response pair — one line in JSONL */
 export interface HttpPair {
   request: HttpRequest;
@@ -28,9 +31,26 @@ export interface HttpPair {
   response: HttpResponse | null;
   /** ISO timestamp when the pair was logged */
   logged_at: string;
+  /** Stable 1-based ordinal assigned at request-receive time; absent in legacy JSONL records */
+  pairIndex?: number;
+  /** Absent means "completed"; present for aborted or timed-out pairs */
+  status?: PairStatus;
   /** Set when response is null */
   note?: string;
 }
+
+/** An in-flight pair whose response has not yet arrived */
+export interface PendingPair {
+  pairIndex: number;
+  request: HttpRequest;
+  startedAt: string;
+}
+
+/** WebSocket message sent from the live server to connected clients */
+export type WSMessage =
+  | { type: "history"; data: HttpPair[] }
+  | { type: "pair-pending"; data: PendingPair }
+  | { type: "pair"; data: HttpPair };
 
 /** An active or completed capture session */
 export interface Session {

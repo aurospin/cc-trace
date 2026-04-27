@@ -191,6 +191,17 @@ describe("full attach pipeline (E2E)", () => {
     expect(html).toContain("window.ccTraceMeta");
     expect(html).toContain(`version: "${pkg.version}"`);
 
+    // FR-001 / FR-002: pairIndex is assigned by the proxy and persisted to JSONL.
+    expect(captured[0]?.pairIndex).toBe(1);
+    expect(captured[1]?.pairIndex).toBe(2);
+    expect(captured[2]?.pairIndex).toBe(3);
+    const jsonlLines = fs.readFileSync(session.jsonlPath, "utf-8").trim().split("\n");
+    expect(jsonlLines).toHaveLength(3);
+    for (const [i, line] of jsonlLines.entries()) {
+      const rec = JSON.parse(line) as { pairIndex?: number };
+      expect(rec.pairIndex).toBe(i + 1);
+    }
+
     await proxy.close();
     await mockApi.close();
   }, 30000);

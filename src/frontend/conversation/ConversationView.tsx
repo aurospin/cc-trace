@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isContentBody } from "../../shared/guards.js";
+import { padWidth as calcPadWidth } from "../../shared/pair-index.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
 import { exhibitLabel } from "./ExhibitList.js";
 import { TurnRow, formatDate, formatTime } from "./TurnRow.js";
@@ -19,6 +20,10 @@ function getAssistantBlocks(pair: HttpPair): ContentBlock[] {
 
 export function ConversationView({ pairs, includeAll }: Props) {
   const conversations = parseHttpPairs(pairs, { includeAll });
+  // Unfiltered view used only for exhibit map construction — ensures tool_result
+  // labels resolve even when the originating tool_use turn is hidden by the filter.
+  const allConvById = new Map(parseHttpPairs(pairs, { includeAll: true }).map((c) => [c.id, c]));
+
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [foldedTurns, setFoldedTurns] = useState<Set<string>>(new Set());
 
@@ -31,6 +36,10 @@ export function ConversationView({ pairs, includeAll }: Props) {
   }
 
   const lastPairLoggedAt = pairs[pairs.length - 1]?.logged_at;
+
+  const allPairIndices = pairs.map((p) => p.pairIndex ?? 1);
+  const highestIndex = Math.max(1, ...allPairIndices);
+  const labelWidth = calcPadWidth(highestIndex);
 
   const toggleConv = (id: string) => {
     setCollapsed((prev) => {
@@ -50,13 +59,25 @@ export function ConversationView({ pairs, includeAll }: Props) {
     });
   };
 
-  let globalTurn = 0;
-
   return (
     <div className="transcript">
       {conversations.map((conv) => {
         const isCollapsed = collapsed.has(conv.id);
-        const exhibitIds: string[] = [];
+
+        // Build exhibitMap from ALL pairs (including display-filtered ones) so
+        // tool_result labels resolve when the originating tool_use turn is hidden.
+        const allPairs = allConvById.get(conv.id)?.pairs ?? conv.pairs;
+        let exhibitCounter = 0;
+        const exhibitMap = new Map<string, string>();
+        for (const pair of allPairs) {
+          for (const b of getAssistantBlocks(pair)) {
+            if (b.type === "tool_use") {
+              exhibitMap.set(b.id, exhibitLabel(exhibitCounter++));
+            }
+          }
+        }
+
+        // Sidebar cards: visible turns only, labels sourced from the same map.
         const exhibitsByTurn: { turnIdx: number; block: ToolUseBlock; label: string }[] = [];
         const blocksByTurn: ContentBlock[][] = [];
         conv.pairs.forEach((pair, turnIdx) => {
@@ -64,14 +85,14 @@ export function ConversationView({ pairs, includeAll }: Props) {
           blocksByTurn.push(blocks);
           for (const b of blocks) {
             if (b.type === "tool_use") {
-              const label = exhibitLabel(exhibitIds.length);
-              exhibitIds.push(b.id);
-              exhibitsByTurn.push({ turnIdx, block: b, label });
+              exhibitsByTurn.push({
+                turnIdx,
+                block: b,
+                label: exhibitMap.get(b.id) ?? exhibitLabel(exhibitCounter++),
+              });
             }
           }
         });
-        const exhibitMap = new Map<string, string>();
-        exhibitIds.forEach((id, i) => exhibitMap.set(id, exhibitLabel(i)));
 
         return (
           <section key={conv.id} className="conversation">
@@ -94,7 +115,6 @@ export function ConversationView({ pairs, includeAll }: Props) {
 
             {!isCollapsed &&
               conv.pairs.map((pair, turnIdx) => {
-                globalTurn += 1;
                 const turnKey = `${conv.id}::${pair.logged_at}`;
                 const isFolded = foldedTurns.has(turnKey);
                 const isFresh =
@@ -107,7 +127,8 @@ export function ConversationView({ pairs, includeAll }: Props) {
                   <TurnRow
                     key={pair.logged_at}
                     pair={pair}
-                    globalTurn={globalTurn}
+                    pairIndex={pair.pairIndex ?? turnIdx + 1}
+                    labelWidth={labelWidth}
                     assistantBlocks={blocksByTurn[turnIdx] ?? []}
                     turnExhibits={turnExhibits}
                     exhibitMap={exhibitMap}

@@ -12,6 +12,7 @@ export default defineConfig({
         'src/frontend/jsonView/jsonViewReducer.ts',
         'src/frontend/stats/useThrottledStats.ts',
         'src/frontend/versionLabel/useWebSocket.ts',
+        'src/frontend/versionLabel/useLivePairs.ts',
         'src/frontend/versionLabel/useWsReconnects.ts',
         // Pure type module
         'src/shared/types.ts',

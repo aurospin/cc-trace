@@ -1,4 +1,5 @@
 import type React from "react";
+import { formatPairLabel } from "../../shared/pair-index.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
 import { ExhibitList } from "./ExhibitList.js";
 import { TokenMeter } from "./TokenMeter.js";
@@ -50,7 +51,7 @@ function renderUserContent(content: unknown, exhibits: Map<string, string>): Rea
       const inner = typeof b.content === "string" ? b.content : JSON.stringify(b.content, null, 2);
       return (
         <div key={`b-${i}`} style={{ marginBottom: 10 }}>
-          <span className="exhibit-chip">re: Exhibit {label}</span>
+          <span className="exhibit-chip">tool_result {label}</span>
           <pre
             style={{
               margin: "6px 0 0",
@@ -77,7 +78,8 @@ function renderUserContent(content: unknown, exhibits: Map<string, string>): Rea
 
 interface Props {
   pair: HttpPair;
-  globalTurn: number;
+  pairIndex: number;
+  labelWidth: number;
   assistantBlocks: ContentBlock[];
   turnExhibits: { block: ToolUseBlock; label: string }[];
   exhibitMap: Map<string, string>;
@@ -89,7 +91,8 @@ interface Props {
 /** Single transcript row: left rail (turn # + token meter), body, right exhibit margin. */
 export function TurnRow({
   pair,
-  globalTurn,
+  pairIndex,
+  labelWidth,
   assistantBlocks,
   turnExhibits,
   exhibitMap,
@@ -110,7 +113,7 @@ export function TurnRow({
           onClick={onToggleFold}
           title={isFolded ? "Expand turn" : "Collapse turn"}
         >
-          {isFolded ? "▸" : "▾"} Turn {pad2(globalTurn)}
+          {isFolded ? "▸" : "▾"} {formatPairLabel("Turn", pairIndex, labelWidth)}
         </button>
         <div className="turn-time">{formatDate(pair.request.timestamp)}</div>
         <div className="turn-time">{formatTime(pair.request.timestamp)}</div>
@@ -149,7 +152,7 @@ export function TurnRow({
                 const label = exhibitMap.get(block.id) ?? "?";
                 return (
                   <span key={`u-${i}`} className="exhibit-chip">
-                    Exhibit {label} — {block.name}
+                    tool_use {label} — {block.name}
                   </span>
                 );
               })}
