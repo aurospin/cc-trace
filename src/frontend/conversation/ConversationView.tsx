@@ -20,12 +20,22 @@ function getAssistantBlocks(pair: HttpPair): ContentBlock[] {
 
 export function ConversationView({ pairs, includeAll }: Props) {
   const conversations = useMemo(() => parseHttpPairs(pairs, { includeAll }), [pairs, includeAll]);
-  // Unfiltered view used only for exhibit map construction — ensures tool_result
-  // labels resolve even when the originating tool_use turn is hidden by the filter.
-  const allConvById = useMemo(
-    () => new Map(parseHttpPairs(pairs, { includeAll: true }).map((c) => [c.id, c])),
-    [pairs],
-  );
+
+  // Single global map across ALL captured pairs. Resolves tool_result labels
+  // even when the originating tool_use is in a different conversation group
+  // (system prompt changed between turns, which Claude Code does frequently).
+  const globalExhibitMap = useMemo(() => {
+    const map = new Map<string, string>();
+    let counter = 0;
+    for (const pair of pairs) {
+      for (const b of getAssistantBlocks(pair)) {
+        if (b.type === "tool_use" && !map.has(b.id)) {
+          map.set(b.id, exhibitLabel(counter++));
+        }
+      }
+    }
+    return map;
+  }, [pairs]);
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [foldedTurns, setFoldedTurns] = useState<Set<string>>(new Set());
@@ -64,25 +74,12 @@ export function ConversationView({ pairs, includeAll }: Props) {
       {conversations.map((conv) => {
         const isCollapsed = collapsed.has(conv.id);
 
-        // Build exhibitMap from ALL pairs (including display-filtered ones) so
-        // tool_result labels resolve when the originating tool_use turn is hidden.
-        const allPairs = allConvById.get(conv.id)?.pairs ?? conv.pairs;
-        let exhibitCounter = 0;
-        const exhibitMap = new Map<string, string>();
-        for (const pair of allPairs) {
-          for (const b of getAssistantBlocks(pair)) {
-            if (b.type === "tool_use") {
-              exhibitMap.set(b.id, exhibitLabel(exhibitCounter++));
-            }
-          }
-        }
-
         // Sidebar cards indexed by turnIdx for O(1) lookup at render time.
         const exhibitsByTurnMap = new Map<number, { block: ToolUseBlock; label: string }[]>();
         conv.pairs.forEach((pair, turnIdx) => {
           for (const b of getAssistantBlocks(pair)) {
             if (b.type === "tool_use") {
-              const label = exhibitMap.get(b.id) ?? exhibitLabel(exhibitCounter++);
+              const label = globalExhibitMap.get(b.id) ?? exhibitLabel(globalExhibitMap.size);
               const entry = exhibitsByTurnMap.get(turnIdx) ?? [];
               entry.push({ block: b, label });
               exhibitsByTurnMap.set(turnIdx, entry);
@@ -125,7 +122,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
                     labelWidth={labelWidth}
                     assistantBlocks={getAssistantBlocks(pair)}
                     turnExhibits={turnExhibits}
-                    exhibitMap={exhibitMap}
+                    exhibitMap={globalExhibitMap}
                     isFolded={isFolded}
                     isFresh={isFresh}
                     onToggleFold={() => toggleTurn(turnKey)}
