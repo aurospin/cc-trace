@@ -50,14 +50,14 @@ npx vitest run tests/unit/<file>.test.ts   # single test file
 | `live-server/{server,broadcaster}.ts` | Express + WS (`GET /`, `/api/pairs`, `/api/status`, `WS /ws`); in-memory history for reload |
 | `report/html-generator.ts` | Base64-encode pairs into `dist/report/template.html`; inline minimal fallback if missing — keep `build:assets` in build |
 | `report/template.ts` | `substituteTokens(tpl, repl)` — sorts keys by length desc to avoid `__FOO__` / `__FOOBAR__` crosstalk |
-| `shared/types.ts` | Cross-tier type declarations — Node-free, no runtime code |
+| `shared/types.ts` | Cross-tier type declarations — Node-free, no runtime code. Includes `AbortedRecord` (shared aborted-pair shape used by proxy, broadcaster, and JSONL writer) |
 | `shared/version.ts` | Reads `package.json` once and exports `PKG_VERSION` literal — single source for live server + HTML report |
-| `shared/guards.ts` | `(x: unknown) => x is T` type guards used at every module boundary in lieu of inline `as { ... }` casts. Each guard has paired accept/reject unit tests |
-| `shared/pair-index.ts` | Pure helpers: `padWidth(highestIndex)` → min label width ≥ 2; `formatPairLabel(prefix, idx, width)` → `"Turn 03"` / `"Pair 042"` |
+| `shared/guards.ts` | `(x: unknown) => x is T` type guards used at every module boundary in lieu of inline `as { ... }` casts. Includes `isWsEnvelope` for WebSocket message dispatch. Each guard has paired accept/reject unit tests |
+| `shared/pair-index.ts` | Pure helpers: `padWidth(highestIndex)` → min label width ≥ 2; `formatPairLabel(prefix, idx, width)` → `"Turn 03"` / `"Pair 042"`; `labelWidthForPairs(pairs)` → convenience wrapper used by all three views |
 | `cli/options.ts` | `parseArgs` throws `CliHelpDisplayed` for `--help`/`--version` (caller exits 0); rethrows all other Commander errors (caller exits 1). **Never collapse the catch into "return defaults"** — that silently runs `attach` on typos |
 | `frontend/styles.css` | Theming via CSS vars on `:root[data-mode="static"\|"live"]` |
 | `frontend/App.tsx` | Sets `documentElement.dataset.mode` from `window.ccTraceData` presence |
-| `frontend/conversation/*` | `ConversationView` container + `TurnRow` + `ExhibitList` + `TokenMeter`. `conversation.ts` (pure): `parseHttpPairs` groups by system+model, `assembleStreaming` parses SSE → `AssembledMessage` |
+| `frontend/conversation/*` | `ConversationView` container + `TurnRow` + `ToolCallList` + `TokenMeter`. `conversation.ts` (pure): `parseHttpPairs` groups by system+model, `assembleStreaming` parses SSE → `AssembledMessage`. `ConversationView` builds one global `toolUseLabels` map from all pairs so `tool_result` chips resolve across conversation groups (system prompt changes) |
 | `frontend/jsonView/*` | `JsonView` container + `JsonTree` + `JsonNode` (recursive renderer) + `JsonBreadcrumb` + `jsonViewReducer`. `json-path.ts` (pure): segment formatting + clipboard payload |
 | `frontend/stats/*` | `StatsBlock` + `useThrottledStats` hook. `stats.ts` + `throttle.ts` (pure): `computeStats`, `nextRecompute` scheduler |
 | `frontend/rawPairs/RawPairsView.tsx` | Tabular pair list |

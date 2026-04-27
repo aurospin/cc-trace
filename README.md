@@ -4,7 +4,7 @@ A MITM proxy logger for Claude Code that captures all HTTP traffic between the C
 
 ## Features
 
-- **The Transcript UI** — three-column editorial layout: turn rail (per-turn token meter, full date + time, fold/unfold), conversation body, right-margin "Exhibits" for hoisted tool calls
+- **The Transcript UI** — three-column editorial layout: turn rail (per-turn token meter, full date + time, fold/unfold), conversation body, right-margin tool call cards (`tool_use #1`, `#2`, …) with linked `tool_result` labels
 - **Session stats block** — single-row pill bar at the top of every view: turn count, requests-by-method, and six independent token totals (`cache_read` · `cache_create` · `ephemeral_5m` · `ephemeral_1h` · `input` · `output`) with `en-US` thousands separators. Live mode coalesces in-flight updates via a 250 ms throttle and flushes on settle
 - **Version + timestamp** — `<version> · <iso-timestamp>` in the masthead, embedded at generate time for static reports and hydrated from `/api/status` (with WS-reconnect retry) for the live dashboard
 - **Live view** — real-time web UI while Claude runs (default `localhost:3000`); pairs stream in over WebSocket
@@ -136,7 +136,7 @@ cc-trace ships a single React app served in two modes — the same component tre
 - **Transcript** — the conversation rendered as a printed transcript:
   - Left rail: globally-numbered turn (`Turn 01`, `02`, …), full date + time (`YYYY/MM/DD` over `HH:MM:SS`), and a per-turn token meter (`cache_read` · `cache_creation` · `input` · `output` as a stacked bar). 4xx/5xx turns get a vermillion fore-edge.
   - Center: speaker rules (no chat-bubble cards). Streaming responses are marked `· streamed`.
-  - Right margin: tool calls auto-hoisted as numbered Exhibits ("Exhibit A", "B", …). The matching `tool_result` in a later turn is linked back as `re: Exhibit A` so you can scan tool flow at a glance.
+  - Right margin: tool calls auto-hoisted as numbered cards (`tool_use #1`, `#2`, …). The matching `tool_result` in any later turn is labelled `tool_result #1` so you can scan tool flow at a glance.
   - Fold / unfold: click a conversation header to collapse the entire conversation; click any `Turn NN` label to fold a single turn while keeping its rail visible.
 - **Pairs** — compact tabular list of every captured pair (status · method · URL · `MM/DD HH:MM:SS`). Click any row to expand its raw JSON.
 - **JSON** — one stacked Request / Response section per pair with sticky labels and per-tree `Expand all` / `Collapse all` controls. Single filter input with a `Both | Request | Response` target toggle, depth-indented hierarchy, type-colored values, live match count. A persistent breadcrumb (e.g. `messages[0].content[1].text`) tracks the last hovered node and copies on click; each row gets a hover-revealed copy button (objects/arrays → pretty JSON, leaves → the raw value).
@@ -246,7 +246,7 @@ src/
     ├── styles.css            # dual-mode theme via [data-mode] CSS vars
     ├── window.d.ts           # global Window augmentation (ccTraceData / ccTraceMeta)
     ├── App.tsx               # masthead, stats block, version label, tabs, mode switch
-    ├── conversation/         # ConversationView, TurnRow, ExhibitList, TokenMeter + conversation.ts (SSE assembly, grouping)
+    ├── conversation/         # ConversationView, TurnRow, ToolCallList, TokenMeter + conversation.ts (SSE assembly, grouping)
     ├── jsonView/             # JsonView, JsonTree, JsonNode, JsonBreadcrumb, jsonViewReducer + json-path.ts
     ├── stats/                # StatsBlock, useThrottledStats + stats.ts, throttle.ts
     ├── rawPairs/             # RawPairsView (tabular pair list)
