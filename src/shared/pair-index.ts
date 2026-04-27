@@ -9,6 +9,15 @@ export function padWidth(highestIndex: number): number {
 }
 
 /**
+ * Computes the label width for a collection of pairs from their pairIndex values.
+ * @param pairs - array of objects carrying an optional pairIndex field
+ * @returns minimum padding width for consistent column alignment, always >= 2
+ */
+export function labelWidthForPairs(pairs: ReadonlyArray<{ pairIndex?: number }>): number {
+  return padWidth(Math.max(1, ...pairs.map((p) => p.pairIndex ?? 1)));
+}
+
+/**
  * Formats a pair label for display in any tab.
  * @param prefix - "Turn" for Transcript tab, "Pair" for Pairs and JSON tabs
  * @param idx - 1-based pair index (must be >= 1)

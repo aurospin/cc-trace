@@ -8,6 +8,7 @@ import { ensureCA } from "../../proxy/cert-manager.js";
 import { startProxy } from "../../proxy/server.js";
 import { generateHTML } from "../../report/html-generator.js";
 import { isMessagesBody } from "../../shared/guards.js";
+import type { AbortedRecord } from "../../shared/types.js";
 import type { ParsedArgs } from "../options.js";
 
 function findClaudePath(custom?: string): string {
@@ -79,7 +80,7 @@ export async function runAttach(args: ParsedArgs): Promise<void> {
     broadcaster.send(pair);
   });
 
-  proxy.emitter.on("pair-aborted", (record) => {
+  proxy.emitter.on("pair-aborted", (record: AbortedRecord) => {
     writer.writeAborted(record);
     broadcaster.sendAborted(record);
     process.stdout.write(

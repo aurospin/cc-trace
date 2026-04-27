@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { isHttpPair, isHttpPairArray, isPendingPair } from "../../shared/guards.js";
+import { isHttpPair, isHttpPairArray, isPendingPair, isWsEnvelope } from "../../shared/guards.js";
 import type { HttpPair } from "../../shared/types.js";
 
 interface LivePairsState {
@@ -28,20 +28,19 @@ export function useLivePairs(wsUrl: string | null): LivePairsState {
 
       ws.onmessage = (event: MessageEvent<string>) => {
         const raw: unknown = JSON.parse(event.data);
-        if (typeof raw !== "object" || raw === null) return;
-        const msg = raw as { type: string; data: unknown };
+        if (!isWsEnvelope(raw)) return;
 
-        if (msg.type === "history" && isHttpPairArray(msg.data)) {
-          setState({ pairs: msg.data, pendingIndices: new Set() });
-        } else if (msg.type === "pair-pending" && isPendingPair(msg.data)) {
-          const idx = (msg.data as { pairIndex: number }).pairIndex;
+        if (raw.type === "history" && isHttpPairArray(raw.data)) {
+          setState({ pairs: raw.data, pendingIndices: new Set() });
+        } else if (raw.type === "pair-pending" && isPendingPair(raw.data)) {
+          const idx = raw.data.pairIndex;
           setState((prev) => {
             const next = new Set(prev.pendingIndices);
             next.add(idx);
             return { pairs: prev.pairs, pendingIndices: next };
           });
-        } else if (msg.type === "pair" && isHttpPair(msg.data)) {
-          const incoming = msg.data as HttpPair;
+        } else if (raw.type === "pair" && isHttpPair(raw.data)) {
+          const incoming = raw.data;
           setState((prev) => {
             const next = new Set(prev.pendingIndices);
             next.delete(incoming.pairIndex ?? -1);
@@ -52,7 +51,10 @@ export function useLivePairs(wsUrl: string | null): LivePairsState {
 
       ws.onclose = () => {
         if (!cancelled) {
-          setState((prev) => ({ pairs: prev.pairs, pendingIndices: new Set() }));
+          setState((prev) => {
+            if (prev.pendingIndices.size === 0) return prev;
+            return { pairs: prev.pairs, pendingIndices: new Set() };
+          });
           setTimeout(connect, 2000);
         }
       };

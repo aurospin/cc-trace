@@ -39,6 +39,14 @@ export interface HttpPair {
   note?: string;
 }
 
+/** An aborted or timed-out pair record emitted by the proxy and persisted to JSONL */
+export interface AbortedRecord {
+  pairIndex: number;
+  request: HttpRequest;
+  status: "aborted" | "timeout";
+  logged_at: string;
+}
+
 /** An in-flight pair whose response has not yet arrived */
 export interface PendingPair {
   pairIndex: number;

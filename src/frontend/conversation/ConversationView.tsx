@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { isContentBody } from "../../shared/guards.js";
-import { padWidth as calcPadWidth } from "../../shared/pair-index.js";
+import { labelWidthForPairs } from "../../shared/pair-index.js";
 import type { ContentBlock, HttpPair, ToolUseBlock } from "../../shared/types.js";
 import { exhibitLabel } from "./ExhibitList.js";
 import { TurnRow, formatDate, formatTime } from "./TurnRow.js";
@@ -19,10 +19,13 @@ function getAssistantBlocks(pair: HttpPair): ContentBlock[] {
 }
 
 export function ConversationView({ pairs, includeAll }: Props) {
-  const conversations = parseHttpPairs(pairs, { includeAll });
+  const conversations = useMemo(() => parseHttpPairs(pairs, { includeAll }), [pairs, includeAll]);
   // Unfiltered view used only for exhibit map construction — ensures tool_result
   // labels resolve even when the originating tool_use turn is hidden by the filter.
-  const allConvById = new Map(parseHttpPairs(pairs, { includeAll: true }).map((c) => [c.id, c]));
+  const allConvById = useMemo(
+    () => new Map(parseHttpPairs(pairs, { includeAll: true }).map((c) => [c.id, c])),
+    [pairs],
+  );
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [foldedTurns, setFoldedTurns] = useState<Set<string>>(new Set());
@@ -36,10 +39,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
   }
 
   const lastPairLoggedAt = pairs[pairs.length - 1]?.logged_at;
-
-  const allPairIndices = pairs.map((p) => p.pairIndex ?? 1);
-  const highestIndex = Math.max(1, ...allPairIndices);
-  const labelWidth = calcPadWidth(highestIndex);
+  const labelWidth = labelWidthForPairs(pairs);
 
   const toggleConv = (id: string) => {
     setCollapsed((prev) => {
@@ -77,19 +77,15 @@ export function ConversationView({ pairs, includeAll }: Props) {
           }
         }
 
-        // Sidebar cards: visible turns only, labels sourced from the same map.
-        const exhibitsByTurn: { turnIdx: number; block: ToolUseBlock; label: string }[] = [];
-        const blocksByTurn: ContentBlock[][] = [];
+        // Sidebar cards indexed by turnIdx for O(1) lookup at render time.
+        const exhibitsByTurnMap = new Map<number, { block: ToolUseBlock; label: string }[]>();
         conv.pairs.forEach((pair, turnIdx) => {
-          const blocks = getAssistantBlocks(pair);
-          blocksByTurn.push(blocks);
-          for (const b of blocks) {
+          for (const b of getAssistantBlocks(pair)) {
             if (b.type === "tool_use") {
-              exhibitsByTurn.push({
-                turnIdx,
-                block: b,
-                label: exhibitMap.get(b.id) ?? exhibitLabel(exhibitCounter++),
-              });
+              const label = exhibitMap.get(b.id) ?? exhibitLabel(exhibitCounter++);
+              const entry = exhibitsByTurnMap.get(turnIdx) ?? [];
+              entry.push({ block: b, label });
+              exhibitsByTurnMap.set(turnIdx, entry);
             }
           }
         });
@@ -119,9 +115,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
                 const isFolded = foldedTurns.has(turnKey);
                 const isFresh =
                   pair.logged_at === lastPairLoggedAt && turnIdx === conv.pairs.length - 1;
-                const turnExhibits = exhibitsByTurn
-                  .filter((x) => x.turnIdx === turnIdx)
-                  .map(({ block, label }) => ({ block, label }));
+                const turnExhibits = exhibitsByTurnMap.get(turnIdx) ?? [];
 
                 return (
                   <TurnRow
@@ -129,7 +123,7 @@ export function ConversationView({ pairs, includeAll }: Props) {
                     pair={pair}
                     pairIndex={pair.pairIndex ?? turnIdx + 1}
                     labelWidth={labelWidth}
-                    assistantBlocks={blocksByTurn[turnIdx] ?? []}
+                    assistantBlocks={getAssistantBlocks(pair)}
                     turnExhibits={turnExhibits}
                     exhibitMap={exhibitMap}
                     isFolded={isFolded}

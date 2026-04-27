@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { padWidth as calcPadWidth, formatPairLabel } from "../../shared/pair-index.js";
+import { formatPairLabel, labelWidthForPairs } from "../../shared/pair-index.js";
 import type { HttpPair } from "../../shared/types.js";
 
 interface Props {
@@ -36,8 +36,7 @@ export function RawPairsView({ pairs, pendingIndices = new Set() }: Props) {
     return <div className="transcript-empty">No requests captured yet.</div>;
   }
 
-  const highestIndex = Math.max(1, ...pairs.map((p) => p.pairIndex ?? 1));
-  const labelWidth = calcPadWidth(highestIndex);
+  const labelWidth = labelWidthForPairs(pairs);
 
   return (
     <div className="raw-list">

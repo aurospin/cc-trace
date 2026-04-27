@@ -16,6 +16,7 @@ import {
   isStreamMessage,
   isStreamMessageDelta,
   isStreamUsage,
+  isWsEnvelope,
 } from "../../src/shared/guards.js";
 
 describe("isStatusMeta", () => {
@@ -297,6 +298,25 @@ describe("isHttpPairArray", () => {
   it("rejects non-array", () => {
     expect(isHttpPairArray(null)).toBe(false);
     expect(isHttpPairArray({ length: 0 })).toBe(false);
+  });
+});
+
+describe("isWsEnvelope", () => {
+  it("accepts {type: string, data: unknown}", () => {
+    expect(isWsEnvelope({ type: "pair", data: {} })).toBe(true);
+    expect(isWsEnvelope({ type: "history", data: [] })).toBe(true);
+    expect(isWsEnvelope({ type: "x", data: null })).toBe(true);
+  });
+  it("rejects missing data field", () => {
+    expect(isWsEnvelope({ type: "pair" })).toBe(false);
+  });
+  it("rejects non-string type", () => {
+    expect(isWsEnvelope({ type: 1, data: {} })).toBe(false);
+  });
+  it("rejects null and primitives", () => {
+    expect(isWsEnvelope(null)).toBe(false);
+    expect(isWsEnvelope("pair")).toBe(false);
+    expect(isWsEnvelope(42)).toBe(false);
   });
 });
 

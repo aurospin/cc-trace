@@ -118,18 +118,14 @@ export function startProxy(
   });
 
   function flushPending(): void {
+    const timestamp = Date.now() / 1000;
+    const logged_at = new Date().toISOString();
     for (const pairIndex of pendingIndices) {
       emitter.emit("pair-aborted", {
         pairIndex,
-        request: {
-          timestamp: Date.now() / 1000,
-          method: "UNKNOWN",
-          url: "",
-          headers: {},
-          body: null,
-        },
+        request: { timestamp, method: "UNKNOWN", url: "", headers: {}, body: null },
         status: "aborted",
-        logged_at: new Date().toISOString(),
+        logged_at,
       });
     }
     pendingIndices.clear();

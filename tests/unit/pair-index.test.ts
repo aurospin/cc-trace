@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPairLabel, padWidth } from "../../src/shared/pair-index.js";
+import { formatPairLabel, labelWidthForPairs, padWidth } from "../../src/shared/pair-index.js";
 
 describe("padWidth", () => {
   it("returns 2 for indices 1–9", () => {
@@ -54,5 +54,23 @@ describe("formatPairLabel", () => {
   it("throws for width < 2", () => {
     expect(() => formatPairLabel("Turn", 1, 1)).toThrow("width must be >= 2");
     expect(() => formatPairLabel("Pair", 1, 0)).toThrow("width must be >= 2");
+  });
+});
+
+describe("labelWidthForPairs", () => {
+  it("returns 2 for empty array (default minimum)", () => {
+    expect(labelWidthForPairs([])).toBe(2);
+  });
+
+  it("returns 2 for single-digit indices", () => {
+    expect(labelWidthForPairs([{ pairIndex: 1 }, { pairIndex: 9 }])).toBe(2);
+  });
+
+  it("returns 3 for three-digit highest index", () => {
+    expect(labelWidthForPairs([{ pairIndex: 1 }, { pairIndex: 100 }])).toBe(3);
+  });
+
+  it("treats missing pairIndex as 1", () => {
+    expect(labelWidthForPairs([{}, { pairIndex: 5 }])).toBe(2);
   });
 });

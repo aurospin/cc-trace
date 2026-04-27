@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { padWidth as calcPadWidth, formatPairLabel } from "../../shared/pair-index.js";
+import { formatPairLabel, labelWidthForPairs } from "../../shared/pair-index.js";
 import type { HttpPair } from "../../shared/types.js";
 import { JsonBreadcrumb } from "./JsonBreadcrumb.js";
 import { isObject, matchesFilter } from "./JsonNode.js";
@@ -37,8 +37,7 @@ export function JsonView({ pairs, pendingIndices = new Set() }: Props) {
   const requestFilter = filterTarget === "both" || filterTarget === "request" ? filter : "";
   const responseFilter = filterTarget === "both" || filterTarget === "response" ? filter : "";
 
-  const highestIndex = Math.max(1, ...pairs.map((p) => p.pairIndex ?? 1));
-  const labelWidth = calcPadWidth(highestIndex);
+  const labelWidth = useMemo(() => labelWidthForPairs(pairs), [pairs]);
 
   const targets: { id: JsonFilterTarget; label: string }[] = [
     { id: "both", label: "Both" },

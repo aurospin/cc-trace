@@ -115,3 +115,8 @@ export function isPendingPair(x: unknown): x is import("./types.js").PendingPair
     typeof x.startedAt === "string"
   );
 }
+
+/** Narrows an unknown WebSocket message to the `{ type, data }` envelope shape. */
+export function isWsEnvelope(x: unknown): x is { type: string; data: unknown } {
+  return isObject(x) && typeof x.type === "string" && "data" in x;
+}

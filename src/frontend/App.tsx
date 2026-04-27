@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { HttpPair } from "../shared/types.js";
 import { ConversationView } from "./conversation/ConversationView.js";
 import { JsonView } from "./jsonView/JsonView.js";
@@ -38,6 +38,12 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, Error
 const STATIC_DATA: HttpPair[] | null =
   typeof window !== "undefined" && window.ccTraceData ? window.ccTraceData : null;
 
+const sortPairs = (arr: HttpPair[]) =>
+  arr.slice().sort((a, b) => (a.pairIndex ?? 0) - (b.pairIndex ?? 0));
+
+// Pre-sort once at module load for static reports; never changes after that.
+const STATIC_PAIRS: HttpPair[] | null = STATIC_DATA ? sortPairs(STATIC_DATA) : null;
+
 const IS_LIVE = STATIC_DATA === null;
 
 const WS_URL: string | null =
@@ -47,9 +53,7 @@ const WS_URL: string | null =
 
 export function App() {
   const { pairs: livePairs, pendingIndices } = useLivePairs(WS_URL);
-  const pairs = (STATIC_DATA ?? livePairs)
-    .slice()
-    .sort((a, b) => (a.pairIndex ?? 0) - (b.pairIndex ?? 0));
+  const pairs = useMemo(() => STATIC_PAIRS ?? sortPairs(livePairs), [livePairs]);
   const [view, setView] = useState<View>("conversations");
   const [includeAll, setIncludeAll] = useState(true);
 
@@ -63,7 +67,10 @@ export function App() {
     { id: "json", label: "JSON" },
   ];
 
-  const errorCount = pairs.filter((p) => p.response && p.response.status_code >= 400).length;
+  const errorCount = useMemo(
+    () => pairs.filter((p) => p.response && p.response.status_code >= 400).length,
+    [pairs],
+  );
 
   return (
     <div className="page">

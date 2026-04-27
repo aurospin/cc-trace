@@ -1,5 +1,5 @@
 import type WebSocket from "ws";
-import type { HttpPair, PendingPair } from "../shared/types.js";
+import type { AbortedRecord, HttpPair, PendingPair } from "../shared/types.js";
 
 export interface Broadcaster {
   /** Register a new WebSocket client */
@@ -11,12 +11,7 @@ export interface Broadcaster {
   /** Complete a pending pair, remove from pending set, broadcast pair to all OPEN clients */
   send(pair: HttpPair): void;
   /** Handle an aborted in-flight pair: remove from pending, broadcast as pair with response: null */
-  sendAborted(record: {
-    pairIndex: number;
-    request: HttpPair["request"];
-    status: "aborted" | "timeout";
-    logged_at: string;
-  }): void;
+  sendAborted(record: AbortedRecord): void;
   /** Returns all completed pairs sent so far, for page-reload recovery (excludes in-flight pending) */
   getPairs(): HttpPair[];
   /** Returns all currently in-flight pending pairs */
@@ -56,12 +51,7 @@ export function createBroadcaster(): Broadcaster {
       history.push(pair);
       broadcast(clients, JSON.stringify({ type: "pair", data: pair }));
     },
-    sendAborted(record: {
-      pairIndex: number;
-      request: HttpPair["request"];
-      status: "aborted" | "timeout";
-      logged_at: string;
-    }): void {
+    sendAborted(record: AbortedRecord): void {
       pendingMap.delete(record.pairIndex);
       const abortedPair: HttpPair = {
         request: record.request,
